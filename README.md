@@ -197,11 +197,54 @@
 
 ### 결제 취소
 
-📌 상황
+📌 상황  
 - 사용자가 결제를 취소
 - 결제 취소가 성공하면 주문 상태도 변경
 
-📌 흐름
+📌 흐름  
 - 사용자가 POST /payments/{orderId}/cancel API 호출
 - 주문 상태 확인
 - 결제 취소 가능하면 상태 변경 후 성공 응답 반환
+
+### 적용해보고 싶은 기술
+
+📌 서비스 분리 - Spring Cloud  
+- User Service: 회원가입, 로그인, JWT 발급/갱신, 사용자 정보 관리
+- Product Service: 상품 목록 조회, 상품 상세 조회, 검색 기능
+- Cart Service: 장바구니 추가, 조회, 삭제
+- Order Service: 주문 생성, 조회, 취소
+- Payment Service: 결제 처리, 결제 취소
+
+📌 DB 선택  
+User, Order, Payment → RDBMS (MySQL, PostgreSQL) 사용  
+Product, Cart → NoSQL (MongoDB, Redis) 사용
+
+📌 DB 아키텍처  
+Master-Slave Replication: 읽기/쓰기 분리
+Connection Pool설정
+
+📌 Redis 캐싱  
+- 상품 목록
+- 장바구니 데이터
+- 주문 상태
+
+📌 비동기 이벤트 처리  
+- Kafka로 주문 생성 → 결제 → 재고 감소 이벤트 기반 처리
+
+📌 인증 / 보안
+- JWT 기반 인증 적용
+- Access Token (만료 짧음) + Refresh Token (길게 유지)
+- OAuth2 지원 (Google, Facebook, Kakao 로그인)
+- BCrypt 비밀번호 암호화
+- SQL Injection 방지
+- Rate Limiting DDoS 방어
+
+📌 CI/CD  
+- github action
+
+📌 트래픽 처리  
+- 로드 밸런싱
+
+📌 모니터링 및 성능 분석  
+- Prometheus 모니터링 시스템
+- Grafana
