@@ -241,6 +241,9 @@
 - 주문 상태 확인
 - 결제 취소 가능하면 상태 변경 후 성공 응답 반환
 
+### ERD
+![image](https://github.com/user-attachments/assets/bf7927f1-daf9-4b66-994a-7142a93efcd4)
+
 ### 적용해보고 싶은 기술
 
 📌 서비스 분리 
@@ -251,8 +254,7 @@
 - Payment Service: 결제 처리, 결제 취소
 
 📌 DB 선택  
-User, Order, Payment → RDBMS (MySQL) 사용  
-Product → NoSQL (MongoDB) 사용
+RDBMS (MySQL) 사용  
 Cart → (Redis) 사용
 
 📌 DB 아키텍처  
