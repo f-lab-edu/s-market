@@ -242,7 +242,9 @@
 - 결제 취소 가능하면 상태 변경 후 성공 응답 반환
 
 ### ERD
-![image](https://github.com/user-attachments/assets/bf7927f1-daf9-4b66-994a-7142a93efcd4)
+![s-market](https://github.com/user-attachments/assets/44ca7c58-46ea-4e6e-b378-3eb040e3d8fa)
+ERD 링크 : https://www.erdcloud.com/d/Wgx8k2m8XzcxEPoMx
+
 
 ### 적용해보고 싶은 기술
 
