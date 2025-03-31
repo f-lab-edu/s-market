@@ -283,3 +283,15 @@ Connection Pool설정
 📌 모니터링 및 성능 분석  
 - Prometheus 모니터링 시스템
 - Grafana
+
+## 기능 구현 우선순위
+
+1. User
+
+2. Product
+
+3. Order
+
+4. Payment
+
+5. Cart
