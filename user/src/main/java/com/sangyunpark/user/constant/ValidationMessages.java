@@ -18,7 +18,8 @@ public class ValidationMessages {
 
     public static final String SHIPPING_INFO_REQUIRED = "배송지 정보는 필수입니다.";
 
-
     public static final String RECEIVER_NAME_REQUIRED = "수령인 이름은 필수입니다.";
     public static final String ADDRESS_REQUIRED = "주소 정보는 필수입니다.";
+
+    public static final String USERTYPE_REQUIRED = "회원 유형은 필수입니다.";
 }
