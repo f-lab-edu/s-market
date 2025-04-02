@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 
 @SuppressWarnings("NonAsciiCharacters")
-class AddressRequestDtoTest {
+class UserAddressRequestDtoTest {
 
     private Validator validator;
 
@@ -28,10 +28,10 @@ class AddressRequestDtoTest {
     @Test
     void 모든값이_정상일때_검증에_성공한다() {
         // given
-        AddressRequestDto dto = new AddressRequestDto("박상윤", "경기도 부천시", true);
+        UserAddressRequestDto dto = new UserAddressRequestDto("박상윤", "경기도 부천시", true);
 
         // when
-        Set<ConstraintViolation<AddressRequestDto>> violations = validator.validate(dto);
+        Set<ConstraintViolation<UserAddressRequestDto>> violations = validator.validate(dto);
 
         // then
         assertThat(violations).isEmpty();
@@ -40,7 +40,7 @@ class AddressRequestDtoTest {
     @Test
     void 수령인_이름이_비어있으면_검증에_실패한다() {
         // given
-        AddressRequestDto dto = new AddressRequestDto(" ", "경기도 부천시", true);
+        UserAddressRequestDto dto = new UserAddressRequestDto(" ", "경기도 부천시", true);
 
         // when, then
         assertViolation(dto,"receiverName", RECEIVER_NAME_REQUIRED);
@@ -49,14 +49,14 @@ class AddressRequestDtoTest {
     @Test
     void 주소가_비어있으면_검증에_실패한다() {
         // given
-        AddressRequestDto dto = new AddressRequestDto("박상윤", "", true);
+        UserAddressRequestDto dto = new UserAddressRequestDto("박상윤", "", true);
 
         // when, then
         assertViolation(dto,"address", ADDRESS_REQUIRED);
     }
 
-    private void assertViolation(AddressRequestDto dto, String field, String expectedMessage) {
-        Set<ConstraintViolation<AddressRequestDto>> violations = validator.validate(dto);
+    private void assertViolation(UserAddressRequestDto dto, String field, String expectedMessage) {
+        Set<ConstraintViolation<UserAddressRequestDto>> violations = validator.validate(dto);
         assertThat(violations)
                 .hasSize(1)
                 .anyMatch(v ->
