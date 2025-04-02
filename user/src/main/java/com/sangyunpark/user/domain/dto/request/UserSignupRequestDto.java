@@ -3,28 +3,30 @@ package com.sangyunpark.user.domain.dto.request;
 import com.sangyunpark.user.domain.vo.RegisterType;
 import jakarta.validation.constraints.*;
 
+import static com.sangyunpark.user.constant.ValidationMessages.*;
+
 public record UserSignupRequestDto(
 
-        @Email(message = "이메일 형식이 올바르지 않습니다.")
-        @NotBlank(message = "이메일은 필수로 입력해야 합니다.")
+        @Email(message = EMAIL_INVALID)
+        @NotBlank(message = EMAIL_REQUIRED)
         String email,
 
-        @NotBlank(message = "사용자 이름은 필수로 작성해야 합니다.")
-        @Size(min = 2, max = 10, message = "이름은 2자 이상 10자 이하로 입력해야 합니다.")
+        @NotBlank(message = USERNAME_REQUIRED)
+        @Size(min = 2, max = 10, message = USERNAME_LENGTH)
         String username,
 
-        @NotBlank(message = "비밀번호는 필수로 입력해야 합니다.")
-        @Size(min = 8, max = 20, message = "비밀번호는 8자 이상 20자 이하여야 합니다.")
+        @NotBlank(message = PASSWORD_REQUIRED)
+        @Size(min = 8, max = 20, message = PASSWORD_LENGTH)
         String password,
 
-        @NotBlank(message = "전화번호는 필수입니다.")
-        @Pattern(regexp = "^010-?\\d{4}-?\\d{4}$", message = "전화번호 형식이 올바르지 않습니다.")
+        @NotBlank(message = PHONE_REQUIRED)
+        @Pattern(regexp = PHONE_REGEX, message = PHONE_INVALID)
         String phoneNumber,
 
-        @NotNull(message = "가입 유형은 필수입니다.")
+        @NotNull(message = REGISTER_TYPE_REQUIRED)
         RegisterType registerType,
 
-        @NotNull(message = "주소 정보는 필수입니다.")
-        AddressRequestDto address
+        @NotNull(message = SHIPPING_INFO_REQUIRED)
+        AddressRequestDto shippingInfo
 ) {
 }

@@ -1,5 +1,6 @@
 package com.sangyunpark.user.domain.dto.request;
 
+import com.sangyunpark.user.constant.ValidationMessages;
 import com.sangyunpark.user.domain.vo.RegisterType;
 import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
+import static com.sangyunpark.user.constant.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("NonAsciiCharacters")
@@ -51,7 +53,7 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "email", "이메일은 필수로 입력해야 합니다.");
+        assertViolation(dto, "email", EMAIL_REQUIRED);
     }
 
     @Test
@@ -65,7 +67,7 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "password", "비밀번호는 8자 이상 20자 이하여야 합니다.");
+        assertViolation(dto, "password", PASSWORD_LENGTH);
     }
 
     @Test
@@ -74,13 +76,12 @@ class UserSignupRequestDtoTest {
                 "test@example.com",
                 "상윤",
                 "password123",
-                "01012345678",
+                "010123@@@@45678",
                 RegisterType.EMAIL,
                 validAddress()
         );
 
-        Set<ConstraintViolation<UserSignupRequestDto>> violations = validator.validate(dto);
-        assertThat(violations).isEmpty();
+        assertViolation(dto, "phoneNumber", PHONE_INVALID);
     }
 
     @Test
@@ -94,7 +95,7 @@ class UserSignupRequestDtoTest {
                 null
         );
 
-        assertViolation(dto, "address", "주소 정보는 필수입니다.");
+        assertViolation(dto, "shippingInfo", SHIPPING_INFO_REQUIRED);
     }
 
     private void assertViolation(UserSignupRequestDto dto, String field, String expectedMessage) {

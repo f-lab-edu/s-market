@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+
+import static com.sangyunpark.user.constant.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -40,11 +42,8 @@ class AddressRequestDtoTest {
         // given
         AddressRequestDto dto = new AddressRequestDto(" ", "경기도 부천시", true);
 
-        // when
-        Set<ConstraintViolation<AddressRequestDto>> violations = validator.validate(dto);
-
-        // then
-        assertViolation(dto,"receiverName", "수령인 이름은 필수입니다.");
+        // when, then
+        assertViolation(dto,"receiverName", RECEIVER_NAME_REQUIRED);
     }
 
     @Test
@@ -52,11 +51,8 @@ class AddressRequestDtoTest {
         // given
         AddressRequestDto dto = new AddressRequestDto("박상윤", "", true);
 
-        // when
-        Set<ConstraintViolation<AddressRequestDto>> violations = validator.validate(dto);
-
-        // then
-        assertViolation(dto,"address", "주소는 필수입니다.");
+        // when, then
+        assertViolation(dto,"address", ADDRESS_REQUIRED);
     }
 
     private void assertViolation(AddressRequestDto dto, String field, String expectedMessage) {
