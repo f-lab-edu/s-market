@@ -1,6 +1,7 @@
 package com.sangyunpark.user.domain.dto.request;
 
 import com.sangyunpark.user.domain.vo.RegisterType;
+import com.sangyunpark.user.domain.vo.UserType;
 import jakarta.validation.constraints.*;
 
 import static com.sangyunpark.user.constant.ValidationMessages.*;
@@ -26,7 +27,13 @@ public record UserSignupRequestDto(
         @NotNull(message = REGISTER_TYPE_REQUIRED)
         RegisterType registerType,
 
+        @NotNull(message = USERTYPE_REQUIRED)
+        UserType userType,
+
         @NotNull(message = SHIPPING_INFO_REQUIRED)
-        AddressRequestDto shippingInfo
+        UserAddressRequestDto shippingInfo
 ) {
+
+
+
 }
