@@ -4,7 +4,7 @@ package com.sangyunpark.user.domain.dto.request;
 import com.sangyunpark.user.constant.ValidationMessages;
 import jakarta.validation.constraints.NotBlank;
 
-public record AddressRequestDto(
+public record UserAddressRequestDto(
         @NotBlank(message = ValidationMessages.RECEIVER_NAME_REQUIRED)
         String receiverName,
 
