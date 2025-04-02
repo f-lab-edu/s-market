@@ -1,6 +1,7 @@
 package com.sangyunpark.user.domain.dto.request;
 
 import com.sangyunpark.user.domain.vo.RegisterType;
+import com.sangyunpark.user.domain.vo.UserType;
 import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,8 @@ class UserSignupRequestDtoTest {
         }
     }
 
-    private AddressRequestDto validAddress() {
-        return new AddressRequestDto("홍길동", "서울시 강남구", true);
+    private UserAddressRequestDto validAddress() {
+        return new UserAddressRequestDto("홍길동", "서울시 강남구", true);
     }
 
     @Test
@@ -34,6 +35,7 @@ class UserSignupRequestDtoTest {
                 "password123",
                 "010-1234-5678",
                 RegisterType.EMAIL,
+                UserType.NORMAL,
                 validAddress()
         );
 
@@ -49,6 +51,7 @@ class UserSignupRequestDtoTest {
                 "password123",
                 "010-1234-5678",
                 RegisterType.EMAIL,
+                UserType.NORMAL,
                 validAddress()
         );
 
@@ -63,6 +66,7 @@ class UserSignupRequestDtoTest {
                 "abcde",
                 "010-1234-5678",
                 RegisterType.EMAIL,
+                UserType.NORMAL,
                 validAddress()
         );
 
@@ -77,6 +81,7 @@ class UserSignupRequestDtoTest {
                 "password123",
                 "010123@@@@45678",
                 RegisterType.EMAIL,
+                UserType.NORMAL,
                 validAddress()
         );
 
@@ -91,10 +96,26 @@ class UserSignupRequestDtoTest {
                 "password123",
                 "010-1234-5678",
                 RegisterType.EMAIL,
+                UserType.NORMAL,
                 null
         );
 
         assertViolation(dto, "shippingInfo", SHIPPING_INFO_REQUIRED);
+    }
+
+    @Test
+    void 회원유형이_null이면_검증에_실패한다() {
+        UserSignupRequestDto dto = new UserSignupRequestDto(
+                "test@example.com",
+                "상윤",
+                "password123",
+                "010-1234-5678",
+                RegisterType.EMAIL,
+                null,
+                validAddress()
+        );
+
+        assertViolation(dto, "userType", USERTYPE_REQUIRED);
     }
 
     private void assertViolation(UserSignupRequestDto dto, String field, String expectedMessage) {
