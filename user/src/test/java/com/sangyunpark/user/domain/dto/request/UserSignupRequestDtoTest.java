@@ -1,6 +1,5 @@
 package com.sangyunpark.user.domain.dto.request;
 
-import com.sangyunpark.user.constant.ValidationMessages;
 import com.sangyunpark.user.domain.vo.RegisterType;
 import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
