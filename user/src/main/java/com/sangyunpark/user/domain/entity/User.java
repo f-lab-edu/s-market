@@ -6,6 +6,9 @@ import com.sangyunpark.user.domain.vo.UserStatus;
 import com.sangyunpark.user.domain.vo.UserType;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class User extends BaseEntity {
@@ -28,8 +31,8 @@ public class User extends BaseEntity {
     @Enumerated(value = EnumType.STRING)
     private UserStatus userStatus;
 
-    @Column(nullable = true)
-    private Long providerId;
+    @Column
+    private String providerId;
 
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
@@ -37,4 +40,7 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     private String phoneNumber;
+
+    @OneToMany
+    private List<UserAddress> userAddress = new ArrayList<>();
 }
