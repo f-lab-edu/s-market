@@ -13,8 +13,9 @@ public class UserAddress {
     @Column(nullable = false)
     private String receiverName;
 
-    @Column(nullable = false)
-    private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT), nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String address;
