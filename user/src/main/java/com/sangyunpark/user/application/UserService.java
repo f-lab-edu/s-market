@@ -2,6 +2,7 @@ package com.sangyunpark.user.application;
 
 import com.sangyunpark.user.application.mapper.UserMapper;
 import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
+import com.sangyunpark.user.domain.dto.resquest.UserSelectByEmailRequestDto;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.exception.UserNotFoundException;
 import com.sangyunpark.user.infrastructure.repository.JpaUserRepository;
@@ -25,8 +26,8 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserSelectResponseDto findUserByEmail(final String email) {
-        User user = jpaUserRepository.findUserByEmail(email).orElseThrow(() -> new UserNotFoundException(EXCEPTION_NOT_FOUND_USER.message()));
+    public UserSelectResponseDto findUserByEmail(final UserSelectByEmailRequestDto dto) {
+        User user = jpaUserRepository.findUserByEmail(dto.email()).orElseThrow(() -> new UserNotFoundException(EXCEPTION_NOT_FOUND_USER.message()));
         return userMapper.toUserSelectResponseDto(user);
     }
 }
