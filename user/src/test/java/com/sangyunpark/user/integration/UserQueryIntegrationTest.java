@@ -41,8 +41,13 @@ class UserQueryIntegrationTest {
         // when & then
         mockMvc.perform(get("/api/v1/users/" + user.getId()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(user.getId().intValue())))
                 .andExpect(jsonPath("$.email", is("iduser@example.com")))
-                .andExpect(jsonPath("$.username", is("상윤")));
+                .andExpect(jsonPath("$.username", is("상윤")))
+                .andExpect(jsonPath("$.userType", is("NORMAL")))
+                .andExpect(jsonPath("$.userStatus", is("ACTIVE")))
+                .andExpect(jsonPath("$.registerType", is("EMAIL")))
+                .andExpect(jsonPath("$.phoneNumber", is("010-1234-5678")));
     }
 
     @Test
@@ -70,8 +75,13 @@ class UserQueryIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id", is(user.getId().intValue())))
                 .andExpect(jsonPath("$.email", is("emailuser@example.com")))
-                .andExpect(jsonPath("$.username", is("상윤")));
+                .andExpect(jsonPath("$.username", is("상윤")))
+                .andExpect(jsonPath("$.userType", is("NORMAL")))
+                .andExpect(jsonPath("$.userStatus", is("ACTIVE")))
+                .andExpect(jsonPath("$.registerType", is("EMAIL")))
+                .andExpect(jsonPath("$.phoneNumber", is("010-1234-5678")));
     }
 
     @Test
