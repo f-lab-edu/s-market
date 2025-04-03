@@ -1,9 +1,9 @@
 package com.sangyunpark.user.domain.entity;
 
 import com.sangyunpark.user.common.BaseEntity;
-import com.sangyunpark.user.domain.vo.RegisterType;
-import com.sangyunpark.user.domain.vo.UserStatus;
-import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.constant.enums.RegisterType;
+import com.sangyunpark.user.constant.enums.UserStatus;
+import com.sangyunpark.user.constant.enums.UserType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

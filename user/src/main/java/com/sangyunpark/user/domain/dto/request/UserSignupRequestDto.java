@@ -1,10 +1,10 @@
 package com.sangyunpark.user.domain.dto.request;
 
-import com.sangyunpark.user.domain.vo.RegisterType;
-import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.constant.enums.RegisterType;
+import com.sangyunpark.user.constant.enums.UserType;
 import jakarta.validation.constraints.*;
 
-import static com.sangyunpark.user.constant.ValidationMessages.*;
+import static com.sangyunpark.user.constant.message.ValidationMessages.*;
 
 public record UserSignupRequestDto(
 

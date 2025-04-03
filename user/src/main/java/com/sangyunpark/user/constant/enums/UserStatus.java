@@ -1,4 +1,4 @@
-package com.sangyunpark.user.domain.vo;
+package com.sangyunpark.user.constant.enums;
 
 public enum UserStatus {
     ACTIVE, INACTIVE, DELETED

@@ -3,7 +3,7 @@ package com.sangyunpark.user.application.mapper;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.entity.UserAddress;
-import com.sangyunpark.user.domain.vo.UserStatus;
+import com.sangyunpark.user.constant.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;

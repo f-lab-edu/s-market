@@ -1,4 +1,4 @@
-package com.sangyunpark.user.constant;
+package com.sangyunpark.user.constant.message;
 
 public enum ResponseMessages {
 

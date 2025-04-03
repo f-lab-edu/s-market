@@ -1,4 +1,4 @@
-package com.sangyunpark.user.constant;
+package com.sangyunpark.user.constant.message;
 
 public class ValidationMessages {
     public static final String EMAIL_INVALID = "이메일 형식이 올바르지 않습니다.";

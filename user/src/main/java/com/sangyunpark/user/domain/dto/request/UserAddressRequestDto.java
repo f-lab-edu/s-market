@@ -1,7 +1,7 @@
 package com.sangyunpark.user.domain.dto.request;
 
 
-import com.sangyunpark.user.constant.ValidationMessages;
+import com.sangyunpark.user.constant.message.ValidationMessages;
 import jakarta.validation.constraints.NotBlank;
 
 public record UserAddressRequestDto(

@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import static com.sangyunpark.user.constant.ExceptionMessages.*;
+import static com.sangyunpark.user.constant.message.ExceptionMessages.*;
 
 @Service
 @RequiredArgsConstructor

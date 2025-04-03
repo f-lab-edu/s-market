@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.sangyunpark.user.constant.ValidationMessages.*;
+import static com.sangyunpark.user.constant.message.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 

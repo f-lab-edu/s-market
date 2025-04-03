@@ -1,14 +1,14 @@
 package com.sangyunpark.user.domain.dto.request;
 
-import com.sangyunpark.user.domain.vo.RegisterType;
-import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.constant.enums.RegisterType;
+import com.sangyunpark.user.constant.enums.UserType;
 import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.sangyunpark.user.constant.ValidationMessages.*;
+import static com.sangyunpark.user.constant.message.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("NonAsciiCharacters")

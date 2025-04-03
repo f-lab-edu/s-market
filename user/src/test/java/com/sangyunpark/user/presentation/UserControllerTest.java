@@ -2,11 +2,11 @@ package com.sangyunpark.user.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.user.application.UserService;
-import com.sangyunpark.user.constant.ResponseMessages;
+import com.sangyunpark.user.constant.message.ResponseMessages;
 import com.sangyunpark.user.domain.dto.request.UserAddressRequestDto;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
-import com.sangyunpark.user.domain.vo.RegisterType;
-import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.constant.enums.RegisterType;
+import com.sangyunpark.user.constant.enums.UserType;
 import com.sangyunpark.user.exception.UserDuplicateException;
 import com.sangyunpark.user.global.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;

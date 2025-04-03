@@ -4,8 +4,8 @@ import com.sangyunpark.user.domain.dto.request.UserAddressRequestDto;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.entity.UserAddress;
-import com.sangyunpark.user.domain.vo.RegisterType;
-import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.constant.enums.RegisterType;
+import com.sangyunpark.user.constant.enums.UserType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
