@@ -2,6 +2,9 @@ package com.sangyunpark.user.integration;
 
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.entity.UserAddress;
+import com.sangyunpark.user.domain.vo.RegisterType;
+import com.sangyunpark.user.domain.vo.UserStatus;
+import com.sangyunpark.user.domain.vo.UserType;
 import com.sangyunpark.user.infrastructure.repository.UserJpaRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.DisplayName;
@@ -12,11 +15,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.sangyunpark.user.constant.ExceptionMessages.EXCEPTION_USER_DUPLICATE;
 import static com.sangyunpark.user.constant.ResponseMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -75,5 +78,52 @@ public class UserIntegrationTest {
         assertThat(address.getDefaultAddress()).isTrue();
 
         assertThat(address.getUser()).isEqualTo(user);
+    }
+
+    @Test
+    @DisplayName("중복된 이메일로 회원가입 요청이 오면 400과 예외 메시지를 반환한다.")
+    void 회원가입_중복된_이메일_실패() throws Exception {
+        // given: 이미 존재하는 유저를 DB에 저장
+        User existingUser = User.builder()
+                .email("test@example.com")
+                .username("기존유저")
+                .password("hashedPassword")
+                .phoneNumber("010-1234-5678")
+                .registerType(RegisterType.EMAIL)
+                .userType(UserType.NORMAL)
+                .userStatus(UserStatus.ACTIVE)
+                .build();
+
+        UserAddress address = UserAddress.builder()
+                .receiverName("기존수신자")
+                .address("서울시 중구")
+                .defaultAddress(true)
+                .build();
+
+        existingUser.addUserAddress(address);
+        userRepository.save(existingUser);
+
+        String requestJson = """
+            {
+              "email": "test@example.com",
+              "username": "상윤",
+              "password": "password123",
+              "phoneNumber": "010-1234-5678",
+              "registerType": "EMAIL",
+              "userType": "NORMAL",
+              "shippingInfo": {
+                "receiverName": "홍길동",
+                "address": "서울시 강남구",
+                "defaultAddress": true
+              }
+            }
+        """;
+
+        // when & then
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(EXCEPTION_USER_DUPLICATE.message()));
     }
 }
