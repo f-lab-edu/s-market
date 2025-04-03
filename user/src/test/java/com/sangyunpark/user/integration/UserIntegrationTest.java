@@ -38,20 +38,20 @@ public class UserIntegrationTest {
     void 회원가입_성공() throws Exception {
         // given
         String requestJson = """
-            {
-              "email": "test@example.com",
-              "username": "상윤",
-              "password": "password123",
-              "phoneNumber": "010-1234-5678",
-              "registerType": "EMAIL",
-              "userType": "NORMAL",
-              "shippingInfo": {
-                "receiverName": "홍길동",
-                "address": "서울시 강남구",
-                "defaultAddress": true
-              }
-            }
-        """;
+        {
+          "email": "test@example.com",
+          "username": "상윤",
+          "password": "password123",
+          "phoneNumber": "010-1234-5678",
+          "registerType": "EMAIL",
+          "userType": "NORMAL",
+          "shippingInfo": {
+            "receiverName": "홍길동",
+            "address": "서울시 강남구",
+            "defaultAddress": true
+          }
+        }
+    """;
 
         // when & then
         mockMvc.perform(post("/api/v1/users")
@@ -61,23 +61,22 @@ public class UserIntegrationTest {
                 .andExpect(jsonPath("$.userId").exists())
                 .andExpect(jsonPath("$.message").value(SUCCESS_SIGNUP.message()));
 
-        User user = userRepository.findById(1L).orElseThrow();
+        User savedUser = userRepository.findAll().iterator().next();
 
-        assertThat(user.getEmail()).isEqualTo("test@example.com");
-        assertThat(user.getUsername()).isEqualTo("상윤");
-        assertThat(user.getPassword()).isNotEqualTo("password123");
-        assertThat(user.getPhoneNumber()).isEqualTo("010-1234-5678");
-        assertThat(user.getRegisterType().name()).isEqualTo("EMAIL");
-        assertThat(user.getUserType().name()).isEqualTo("NORMAL");
-        assertThat(user.getUserStatus().name()).isEqualTo("ACTIVE");
+        assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
+        assertThat(savedUser.getUsername()).isEqualTo("상윤");
+        assertThat(savedUser.getPassword()).isNotEqualTo("password123");
+        assertThat(savedUser.getPhoneNumber()).isEqualTo("010-1234-5678");
+        assertThat(savedUser.getRegisterType().name()).isEqualTo("EMAIL");
+        assertThat(savedUser.getUserType().name()).isEqualTo("NORMAL");
+        assertThat(savedUser.getUserStatus().name()).isEqualTo("ACTIVE");
 
-        assertThat(user.getUserAddress()).hasSize(1);
-        UserAddress address = user.getUserAddress().get(0);
+        assertThat(savedUser.getUserAddress()).hasSize(1);
+        UserAddress address = savedUser.getUserAddress().get(0);
         assertThat(address.getReceiverName()).isEqualTo("홍길동");
         assertThat(address.getAddress()).isEqualTo("서울시 강남구");
         assertThat(address.getDefaultAddress()).isTrue();
-
-        assertThat(address.getUser()).isEqualTo(user);
+        assertThat(address.getUser()).isEqualTo(savedUser);
     }
 
     @Test
