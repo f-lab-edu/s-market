@@ -2,12 +2,11 @@ package com.sangyunpark.user.presentation;
 
 import com.sangyunpark.user.application.UserService;
 import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
+import com.sangyunpark.user.domain.dto.resquest.UserSelectByEmailRequestDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -19,6 +18,12 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserSelectResponseDto> findUserById(@PathVariable Long id) {
         UserSelectResponseDto responseDto = userService.findUserById(id);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @PostMapping("/email")
+    public ResponseEntity<UserSelectResponseDto> findUserByEmail(@Valid @RequestBody UserSelectByEmailRequestDto userSelectByEmailRequestDto) {
+        UserSelectResponseDto responseDto = userService.findUserByEmail(userSelectByEmailRequestDto);
         return ResponseEntity.ok(responseDto);
     }
 }
