@@ -7,12 +7,18 @@ import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.vo.RegisterType;
 import com.sangyunpark.user.domain.vo.UserStatus;
 import com.sangyunpark.user.domain.vo.UserType;
+import com.sangyunpark.user.exception.UserDuplicateException;
 import com.sangyunpark.user.infrastructure.repository.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
+import static com.sangyunpark.user.constant.ExceptionMessages.EXCEPTION_USER_DUPLICATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("NonAsciiCharacters")
@@ -20,15 +26,15 @@ class UserServiceTest {
 
     private UserMapper userMapper;
 
-    private UserJpaRepository repository;
+    private UserJpaRepository userJpaRepository;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         userMapper = mock(UserMapper.class);
-        repository = mock(UserJpaRepository.class);
-        userService = new UserService(userMapper, repository);
+        userJpaRepository = mock(UserJpaRepository.class);
+        userService = new UserService(userMapper, userJpaRepository);
     }
 
     @Test
@@ -42,7 +48,7 @@ class UserServiceTest {
                 "010-1234-5678",
                 RegisterType.EMAIL,
                 UserType.NORMAL,
-                new UserAddressRequestDto("홍길동", "서울시 강남구", true)
+                new UserAddressRequestDto("박상윤", "서울시 강남구", true)
         );
 
         User mappedUser = User.builder()
@@ -61,7 +67,7 @@ class UserServiceTest {
                 .build();
 
         when(userMapper.toEntity(dto)).thenReturn(mappedUser);
-        when(repository.save(mappedUser)).thenReturn(savedUser);
+        when(userJpaRepository.save(mappedUser)).thenReturn(savedUser);
 
         // when
         Long result = userService.signup(dto);
@@ -69,6 +75,39 @@ class UserServiceTest {
         // then
         assertThat(result).isEqualTo(1L);
         verify(userMapper).toEntity(dto);
-        verify(repository).save(mappedUser);
+        verify(userJpaRepository).save(mappedUser);
+    }
+
+    @Test
+    @DisplayName("중복된 이메일로 회원가입하면 예외가 발생한다")
+    void 중복된_이메일_회원가입_실패() {
+        // given
+        UserSignupRequestDto request = new UserSignupRequestDto(
+                "existing@email.com",
+                "박상윤",
+                "password123",
+                "010-1234-5678",
+                RegisterType.EMAIL,
+                UserType.NORMAL,
+                new UserAddressRequestDto("박상윤", "서울시 강남구", true)
+        );
+
+        User existingUser = User.builder()
+                .email(request.email())
+                .username(request.username())
+                .password(request.password())
+                .phoneNumber(request.phoneNumber())
+                .registerType(request.registerType())
+                .userType(request.userType())
+                .userStatus(UserStatus.ACTIVE)
+                .build();
+
+        given(userJpaRepository.findUserByEmail(request.email()))
+                .willReturn(Optional.of(existingUser));
+
+        // when & then
+        assertThatThrownBy(() -> userService.signup(request))
+                .isInstanceOf(UserDuplicateException.class)
+                .hasMessage(EXCEPTION_USER_DUPLICATE.message());
     }
 }
