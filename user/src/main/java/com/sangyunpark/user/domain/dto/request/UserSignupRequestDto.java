@@ -4,36 +4,32 @@ import com.sangyunpark.user.constant.enums.RegisterType;
 import com.sangyunpark.user.constant.enums.UserType;
 import jakarta.validation.constraints.*;
 
-import static com.sangyunpark.user.constant.message.ValidationMessages.*;
-
 public record UserSignupRequestDto(
 
-        @Email(message = EMAIL_INVALID)
-        @NotBlank(message = EMAIL_REQUIRED)
+        @Email
+        @NotBlank
         String email,
 
-        @NotBlank(message = USERNAME_REQUIRED)
-        @Size(min = 2, max = 10, message = USERNAME_LENGTH)
+        @NotBlank
+        @Size(min = 2, max = 10)
         String username,
 
-        @NotBlank(message = PASSWORD_REQUIRED)
-        @Size(min = 8, max = 20, message = PASSWORD_LENGTH)
+        @NotBlank
+        @Size(min = 8, max = 20)
         String password,
 
-        @NotBlank(message = PHONE_REQUIRED)
-        @Pattern(regexp = PHONE_REGEX, message = PHONE_INVALID)
+        @NotBlank
+        @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$")
         String phoneNumber,
 
-        @NotNull(message = REGISTER_TYPE_REQUIRED)
+        @NotNull
         RegisterType registerType,
 
-        @NotNull(message = USERTYPE_REQUIRED)
+        @NotNull
         UserType userType,
 
-        @NotNull(message = SHIPPING_INFO_REQUIRED)
+        @NotNull
         UserAddressRequestDto shippingInfo
 ) {
-
-
 
 }
