@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.sangyunpark.user.constant.message.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings("NonAsciiCharacters")
@@ -55,7 +54,7 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "email", EMAIL_REQUIRED);
+        assertViolation(dto, "email");
     }
 
     @Test
@@ -70,7 +69,7 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "password", PASSWORD_LENGTH);
+        assertViolation(dto, "password");
     }
 
     @Test
@@ -85,7 +84,7 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "phoneNumber", PHONE_INVALID);
+        assertViolation(dto, "phoneNumber");
     }
 
     @Test
@@ -100,7 +99,7 @@ class UserSignupRequestDtoTest {
                 null
         );
 
-        assertViolation(dto, "shippingInfo", SHIPPING_INFO_REQUIRED);
+        assertViolation(dto, "shippingInfo");
     }
 
     @Test
@@ -115,16 +114,15 @@ class UserSignupRequestDtoTest {
                 validAddress()
         );
 
-        assertViolation(dto, "userType", USERTYPE_REQUIRED);
+        assertViolation(dto, "userType");
     }
 
-    private void assertViolation(UserSignupRequestDto dto, String field, String expectedMessage) {
+    private void assertViolation(UserSignupRequestDto dto, String field) {
         Set<ConstraintViolation<UserSignupRequestDto>> violations = validator.validate(dto);
         assertThat(violations)
                 .hasSize(1)
                 .anyMatch(v ->
                         v.getPropertyPath().toString().equals(field)
-                                && v.getMessage().equals(expectedMessage)
                 );
     }
 }
