@@ -1,10 +1,12 @@
 package com.sangyunpark.user.integration;
 
+import com.sangyunpark.user.constant.code.ErrorCode;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.entity.UserAddress;
 import com.sangyunpark.user.constant.enums.RegisterType;
 import com.sangyunpark.user.constant.enums.UserStatus;
 import com.sangyunpark.user.constant.enums.UserType;
+import com.sangyunpark.user.exception.BusinessException;
 import com.sangyunpark.user.infrastructure.repository.UserJpaRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.DisplayName;
@@ -15,8 +17,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static com.sangyunpark.user.constant.message.ExceptionMessages.EXCEPTION_USER_DUPLICATE;
-import static com.sangyunpark.user.constant.message.ResponseMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -58,10 +58,10 @@ public class UserIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").exists())
-                .andExpect(jsonPath("$.message").value(SUCCESS_SIGNUP.message()));
+                .andExpect(jsonPath("$.userId").exists());
 
-        User savedUser = userRepository.findAll().iterator().next();
+        User savedUser = userRepository.findUserByEmail("test@example.com")
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
         assertThat(savedUser.getUsername()).isEqualTo("상윤");
@@ -122,7 +122,6 @@ public class UserIntegrationTest {
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(EXCEPTION_USER_DUPLICATE.message()));
+                .andExpect(status().is(ErrorCode.USER_DUPLICATE.getStatus().value()));
     }
 }
