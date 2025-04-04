@@ -2,12 +2,12 @@ package com.sangyunpark.user.presentation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.user.application.UserService;
-import com.sangyunpark.user.constant.message.ResponseMessages;
+import com.sangyunpark.user.constant.code.ErrorCode;
 import com.sangyunpark.user.domain.dto.request.UserAddressRequestDto;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
 import com.sangyunpark.user.constant.enums.RegisterType;
 import com.sangyunpark.user.constant.enums.UserType;
-import com.sangyunpark.user.exception.UserDuplicateException;
+import com.sangyunpark.user.exception.BusinessException;
 import com.sangyunpark.user.global.GlobalExceptionHandler;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,10 +18,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static com.sangyunpark.user.constant.code.ErrorCode.*;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -64,8 +64,7 @@ class UserControllerTest {
                 )
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId", is(fakeUserId.intValue())))
-                .andExpect(jsonPath("$.message", is(ResponseMessages.SUCCESS_SIGNUP.message())));
+                .andExpect(jsonPath("$.userId", is(fakeUserId.intValue())));
     }
 
     @Test
@@ -83,14 +82,13 @@ class UserControllerTest {
         );
 
         given(userService.signup(any(UserSignupRequestDto.class)))
-                .willThrow(new UserDuplicateException("이미 존재하는 이메일입니다."));
+                .willThrow(new BusinessException(USER_DUPLICATE));
 
         // when & then
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("이미 존재하는 이메일입니다."));
+                .andExpect(status().is(USER_DUPLICATE.getStatus().value()));
     }
 
     @Test
@@ -109,6 +107,6 @@ class UserControllerTest {
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().is(INVALID_REQUEST.getStatus().value()));
     }
 }
