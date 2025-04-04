@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import static com.sangyunpark.user.constant.message.ResponseMessages.*;
-
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
@@ -21,8 +19,8 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserSignupResponseDto> signup(@Valid @RequestBody UserSignupRequestDto request) {
+    public UserSignupResponseDto signup(@Valid @RequestBody UserSignupRequestDto request) {
         Long userId = userService.signup(request);
-        return ResponseEntity.ok(new UserSignupResponseDto(userId, SUCCESS_SIGNUP.message()));
+        return new UserSignupResponseDto(userId);
     }
 }
