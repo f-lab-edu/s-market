@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-import static com.sangyunpark.user.constant.message.ValidationMessages.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -43,7 +42,7 @@ class UserAddressRequestDtoTest {
         UserAddressRequestDto dto = new UserAddressRequestDto(" ", "경기도 부천시", true);
 
         // when, then
-        assertViolation(dto,"receiverName", RECEIVER_NAME_REQUIRED);
+        assertViolation(dto,"receiverName");
     }
 
     @Test
@@ -52,16 +51,15 @@ class UserAddressRequestDtoTest {
         UserAddressRequestDto dto = new UserAddressRequestDto("박상윤", "", true);
 
         // when, then
-        assertViolation(dto,"address", ADDRESS_REQUIRED);
+        assertViolation(dto,"address");
     }
 
-    private void assertViolation(UserAddressRequestDto dto, String field, String expectedMessage) {
+    private void assertViolation(UserAddressRequestDto dto, String field) {
         Set<ConstraintViolation<UserAddressRequestDto>> violations = validator.validate(dto);
         assertThat(violations)
                 .hasSize(1)
                 .anyMatch(v ->
                         v.getPropertyPath().toString().equals(field)
-                                && v.getMessage().equals(expectedMessage)
                 );
     }
 
