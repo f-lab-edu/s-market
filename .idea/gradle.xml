@@ -22,6 +22,11 @@
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/auth" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/auth" />
+          </set>
+        </option>
       </GradleProjectSettings>
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/cart" />
