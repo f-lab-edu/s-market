@@ -286,7 +286,7 @@ Connection Pool설정
 
 ## 기능 구현 우선순위
 
-1. User
+1. User + 인증
 
 2. Product
 
