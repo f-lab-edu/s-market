@@ -1,5 +1,6 @@
 package com.sangyunpark.user.application;
 
+import com.sangyunpark.user.application.mapper.UserMapper;
 import com.sangyunpark.user.constant.code.ErrorCode;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
 import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
@@ -34,12 +35,10 @@ public class UserService {
     }
 
     public UserSelectResponseDto findUserById(final Long userId) {
-        final User user = userJpaRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        return toUserSelectResponseDto(user);
+        return userJpaRepository.findById(userId).map(UserMapper::toUserSelectResponseDto).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     public UserSelectResponseDto findUserByEmail(final String email) {
-        final User user = userJpaRepository.findUserByEmail(email).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-        return toUserSelectResponseDto(user);
+        return userJpaRepository.findUserByEmail(email).map(UserMapper::toUserSelectResponseDto).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 }
