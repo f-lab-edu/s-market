@@ -1,2 +1,3 @@
 rootProject.name = 's-market'
-
+include 'user'
+include 'auth'
