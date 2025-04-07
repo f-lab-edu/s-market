@@ -2,6 +2,7 @@ package com.sangyunpark.user.application.mapper;
 
 import com.sangyunpark.user.constant.enums.UserStatus;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
+import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.domain.entity.UserAddress;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,5 +29,17 @@ public class UserMapper {
         user.addUserAddress(userAddress);
 
         return user;
+    }
+
+    public static UserSelectResponseDto toUserSelectResponseDto(final User user) {
+        return UserSelectResponseDto.builder()
+                .id(user.getId())
+                .userType(user.getUserType())
+                .userStatus(user.getUserStatus())
+                .phoneNumber(user.getPhoneNumber())
+                .registerType(user.getRegisterType())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .build();
     }
 }

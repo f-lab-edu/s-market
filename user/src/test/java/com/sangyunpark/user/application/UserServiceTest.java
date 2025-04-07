@@ -1,12 +1,12 @@
 package com.sangyunpark.user.application;
 
-import com.sangyunpark.user.application.mapper.UserMapper;
-import com.sangyunpark.user.domain.dto.request.UserAddressRequestDto;
-import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
-import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.constant.enums.RegisterType;
 import com.sangyunpark.user.constant.enums.UserStatus;
 import com.sangyunpark.user.constant.enums.UserType;
+import com.sangyunpark.user.domain.dto.request.UserAddressRequestDto;
+import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
+import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
+import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.exception.BusinessException;
 import com.sangyunpark.user.infrastructure.repository.UserJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,5 +94,72 @@ class UserServiceTest {
         // when & then
         assertThatThrownBy(() -> userService.signup(request))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("ID로 회원 조회 성공")
+    void findUserById_성공() {
+        // given
+        Long id = 1L;
+        User user = createUser();
+
+        given(userJpaRepository.findById(id)).willReturn(Optional.of(user));
+
+        // when
+        UserSelectResponseDto result = userService.findUserById(id);
+
+        // then
+        assertThat(result.email()).isEqualTo("test@example.com");
+    }
+
+    @Test
+    @DisplayName("ID로 존재하지 않는 회원 조회 시 예외 발생")
+    void findUserById_실패() {
+        Long id = 999L;
+
+        given(userJpaRepository.findById(id)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findUserById(id))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("이메일로 회원 조회 성공")
+    void findUserByEmail_성공() {
+        // given
+        final User user = createUser();
+        String email = "test@example.com";
+
+        given(userJpaRepository.findUserByEmail(email)).willReturn(Optional.of(user));
+
+        // when
+        UserSelectResponseDto result = userService.findUserByEmail(email);
+
+        // then
+        assertThat(result.email()).isEqualTo("test@example.com");
+        verify(userJpaRepository).findUserByEmail(email);
+    }
+
+    @Test
+    @DisplayName("이메일로 존재하지 않는 회원 조회 시 예외 발생")
+    void findUserByEmail_실패() {
+        String email = "notfound@example.com";
+        given(userJpaRepository.findUserByEmail(email)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userService.findUserByEmail(email))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    private User createUser() {
+        return User.builder()
+                .id(1L)
+                .email("test@example.com")
+                .username("상윤")
+                .password("hashed-password")
+                .phoneNumber("010-1234-5678")
+                .registerType(RegisterType.EMAIL)
+                .userType(UserType.NORMAL)
+                .userStatus(UserStatus.ACTIVE)
+                .build();
     }
 }
