@@ -2,6 +2,8 @@ package com.sangyunpark.user.application;
 
 import com.sangyunpark.user.constant.code.ErrorCode;
 import com.sangyunpark.user.domain.dto.request.UserSignupRequestDto;
+import com.sangyunpark.user.domain.dto.response.UserSelectResponseDto;
+import com.sangyunpark.user.domain.dto.request.UserSelectByEmailRequestDto;
 import com.sangyunpark.user.domain.entity.User;
 import com.sangyunpark.user.exception.BusinessException;
 import com.sangyunpark.user.infrastructure.repository.UserJpaRepository;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.sangyunpark.user.application.mapper.UserMapper.*;
 import static com.sangyunpark.user.application.mapper.UserMapper.toEntity;
 
 @Service
@@ -28,5 +31,15 @@ public class UserService {
                     User savedUser = userJpaRepository.save(toEntity(userSignupRequestDto));
                     return savedUser.getId();
                 });
+    }
+
+    public UserSelectResponseDto findUserById(final Long userId) {
+        final User user = userJpaRepository.findById(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return toUserSelectResponseDto(user);
+    }
+
+    public UserSelectResponseDto findUserByEmail(final String email) {
+        final User user = userJpaRepository.findUserByEmail(email).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return toUserSelectResponseDto(user);
     }
 }
