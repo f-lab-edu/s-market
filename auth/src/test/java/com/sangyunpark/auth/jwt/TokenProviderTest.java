@@ -1,6 +1,6 @@
 package com.sangyunpark.auth.jwt;
 
-import com.sangyunpark.auth.constants.type.UserType;
+import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -9,30 +9,30 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 
 @SuppressWarnings("NonAsciiCharacters")
-class JwtProviderTest {
+class TokenProviderTest {
 
-    private static final String secret = "qwieuqwoieqwoieuqwoieuqwoeowqieuwqioeuwqoeiqwueoqwieuqwoieuqwoie"; // 최소 256bit 이상
-    long accessTokenExpire = 1000 * 2;  // 2초
-    long refreshTokenExpire = 1000 * 60 * 60; // 1시간
+    private static final String SECRET = "qwieuqwoieqwoieuqwoieuqwoeowqieuwqioeuwqoeiqwueoqwieuqwoieuqwoie"; // 최소 256bit 이상
+    private static final long ACCESS_TOKEN_EXPIRE = 1000 * 2;  // 2초
+    private static final long REFRESH_TOKEN_EXPIRE = 1000 * 60 * 60; // 1시간
 
-    private JwtProvider jwtProvider;
+    private TokenProvider tokenProvider;
 
     @BeforeEach
     void setUp() {
-        jwtProvider = new JwtProvider(secret, accessTokenExpire, refreshTokenExpire);
+        tokenProvider = new TokenProvider(SECRET, ACCESS_TOKEN_EXPIRE, REFRESH_TOKEN_EXPIRE);
     }
 
     @Test
     @DisplayName("빈 토큰이면 예외를 던진다.")
     void 빈_토큰_예외() {
-        assertThatThrownBy(() -> jwtProvider.validateToken(""))
+        assertThatThrownBy(() -> tokenProvider.validateToken(""))
                 .isInstanceOf(BusinessException.class);
     }
 
     @Test
     @DisplayName("null 토큰이면 예외가 발생한다.")
     void null_토큰_예외() {
-        assertThatThrownBy(() -> jwtProvider.validateToken(null))
+        assertThatThrownBy(() -> tokenProvider.validateToken(null))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -41,7 +41,7 @@ class JwtProviderTest {
     void 잘못된_형식의_토큰_예외() {
         String malformedToken = "this-is-not-a-valid-jwt";
 
-        assertThatThrownBy(() -> jwtProvider.validateToken(malformedToken))
+        assertThatThrownBy(() -> tokenProvider.validateToken(malformedToken))
                 .isInstanceOf(BusinessException.class);
     }
 
@@ -53,21 +53,21 @@ class JwtProviderTest {
         UserType userType = UserType.NORMAL;
 
         // when
-        String accessToken = jwtProvider.createAccessToken(email, userType);
+        String accessToken = tokenProvider.createAccessToken(email, userType);
 
         // then
         assertThat(accessToken).isNotBlank();
-        assertThatCode(() -> jwtProvider.validateToken(accessToken)).doesNotThrowAnyException();
+        assertThatCode(() -> tokenProvider.validateToken(accessToken)).doesNotThrowAnyException();
 
-        assertThat(jwtProvider.getEmail(accessToken)).isEqualTo(email);
-        assertThat(jwtProvider.getUserType(accessToken)).isEqualTo(userType.name());
+        assertThat(tokenProvider.getEmail(accessToken)).isEqualTo(email);
+        assertThat(tokenProvider.getUserType(accessToken)).isEqualTo(userType.name());
     }
 
     @Test
     @DisplayName("만료된 토큰이면 예외가 발생한다.")
     void 만료된_토큰이면_예외가_발생한다() throws InterruptedException {
         // given
-        JwtProvider shortLivedProvider = new JwtProvider(
+        TokenProvider shortLivedProvider = new TokenProvider(
                 "your-256-bit-secret-key-your-256-bit-secret-key",
                 1, // access token 1ms
                 1000 * 60 * 60
@@ -86,9 +86,9 @@ class JwtProviderTest {
     @DisplayName("잘못된 서명 토큰은 예외를 던진다.")
     void 잘못된_서명_토큰은_예외를_던진다() {
 
-        String token = jwtProvider.createAccessToken("test@example.com", UserType.ADMIN);
+        String token = tokenProvider.createAccessToken("test@example.com", UserType.ADMIN);
 
-        JwtProvider otherProvider = new JwtProvider(
+        TokenProvider otherProvider = new TokenProvider(
                 "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdc",
                 1000 * 60,
                 1000 * 60
