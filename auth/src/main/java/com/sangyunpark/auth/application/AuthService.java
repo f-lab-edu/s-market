@@ -3,13 +3,15 @@ package com.sangyunpark.auth.application;
 import com.sangyunpark.auth.client.UserClient;
 import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
 import com.sangyunpark.auth.constants.code.ErrorCode;
+import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.domain.vo.Token;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.UserPrincipal;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
-import com.sangyunpark.auth.presentation.dto.response.LoginResponseDto;
+import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,19 +25,20 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RedisTokenRepository redisTokenRepository;
 
-    public LoginResponseDto login(final LoginRequestDto loginRequestDto) {
+    public TokenResponseDto login(final LoginRequestDto loginRequestDto) {
 
-        final FeignUserSelectResponseDto user = getFeignUserByEmail(loginRequestDto.email());
+        final FeignUserSelectResponseDto user = userClient.findUserByEmail(loginRequestDto.email());
         validatePassword(loginRequestDto.password(), user.password());
-
-        final Token token = createToken(user.email(), user.userType());
-        saveRefreshToken(user.email(), token.refreshToken());
-
-        return new LoginResponseDto(token);
+        Token token = generateAndStoreToken(user.email(), user.userType(), user.userStatus());
+        return new TokenResponseDto(token);
     }
 
-    private FeignUserSelectResponseDto getFeignUserByEmail(final String email) {
-        return userClient.findUserByEmail(email);
+    public TokenResponseDto reissue(final String refreshToken, final UserPrincipal userPrincipal) {
+        final String email = userPrincipal.getEmail();
+        tokenProvider.validateToken(refreshToken);
+        validateStoredRefreshToken(email, refreshToken);
+        Token newToken = generateAndStoreToken(email, userPrincipal.getUserType(), userPrincipal.getUserStatus());
+        return new TokenResponseDto(newToken);
     }
 
     private void validatePassword(final String password, final String encodedPassword) {
@@ -44,13 +47,20 @@ public class AuthService {
         }
     }
 
-    private Token createToken(final String email, final UserType userType) {
-        final String accessToken = tokenProvider.createAccessToken(email, userType);
-        final String refreshToken = tokenProvider.createRefreshToken(email, userType);
+    private Token generateAndStoreToken(final String email, final UserType userType, final UserStatus userStatus) {
+        final String accessToken = tokenProvider.createAccessToken(email, userType, userStatus);
+        final String refreshToken = tokenProvider.createRefreshToken(email, userType, userStatus);
+
+        redisTokenRepository.save(email, refreshToken);
         return Token.of(accessToken, refreshToken);
     }
 
-    private void saveRefreshToken(final String email, final String refreshToken) {
-        redisTokenRepository.save(email, refreshToken);
+    private void validateStoredRefreshToken(final String email, final String requestToken) {
+        String storedToken = redisTokenRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_TOKEN));
+
+        if (!storedToken.equals(requestToken)) {
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+        }
     }
 }
