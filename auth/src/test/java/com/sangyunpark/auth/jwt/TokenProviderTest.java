@@ -1,5 +1,7 @@
 package com.sangyunpark.auth.jwt;
 
+import com.sangyunpark.auth.constants.code.ErrorCode;
+import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,14 +28,18 @@ class TokenProviderTest {
     @DisplayName("빈 토큰이면 예외를 던진다.")
     void 빈_토큰_예외() {
         assertThatThrownBy(() -> tokenProvider.validateToken(""))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 
     @Test
     @DisplayName("null 토큰이면 예외가 발생한다.")
     void null_토큰_예외() {
         assertThatThrownBy(() -> tokenProvider.validateToken(null))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 
     @Test
@@ -42,7 +48,9 @@ class TokenProviderTest {
         String malformedToken = "this-is-not-a-valid-jwt";
 
         assertThatThrownBy(() -> tokenProvider.validateToken(malformedToken))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 
     @Test
@@ -51,9 +59,10 @@ class TokenProviderTest {
         // given
         String email = "test@example.com";
         UserType userType = UserType.NORMAL;
+        UserStatus userStatus = UserStatus.ACTIVE;
 
         // when
-        String accessToken = tokenProvider.createAccessToken(email, userType);
+        String accessToken = tokenProvider.createAccessToken(email, userType, userStatus);
 
         // then
         assertThat(accessToken).isNotBlank();
@@ -73,20 +82,22 @@ class TokenProviderTest {
                 1000 * 60 * 60
         );
 
-        String token = shortLivedProvider.createAccessToken("test@example.com", UserType.NORMAL);
+        String token = shortLivedProvider.createAccessToken("test@example.com", UserType.NORMAL, UserStatus.ACTIVE);
 
         Thread.sleep(10); // token 만료 대기
 
         // when & then
         assertThatThrownBy(() -> shortLivedProvider.validateToken(token))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 
     @Test
     @DisplayName("잘못된 서명 토큰은 예외를 던진다.")
     void 잘못된_서명_토큰은_예외를_던진다() {
 
-        String token = tokenProvider.createAccessToken("test@example.com", UserType.ADMIN);
+        String token = tokenProvider.createAccessToken("test@example.com", UserType.ADMIN, UserStatus.ACTIVE);
 
         TokenProvider otherProvider = new TokenProvider(
                 "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdc",
@@ -96,6 +107,9 @@ class TokenProviderTest {
 
         // when & then
         assertThatThrownBy(() -> otherProvider.validateToken(token))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
+
     }
 }
