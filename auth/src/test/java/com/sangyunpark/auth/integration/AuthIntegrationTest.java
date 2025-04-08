@@ -108,7 +108,7 @@ public class AuthIntegrationTest {
 
         Long ttlBefore = redisTokenRepository.getExpire(email); // TTL 확인
 
-        Thread.sleep(20);
+        Thread.sleep(100);
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
