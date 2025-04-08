@@ -1,4 +1,4 @@
-package com.sangyunpark.auth.global;
+package com.sangyunpark.auth.global.handler;
 
 import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.exception.BusinessException;
