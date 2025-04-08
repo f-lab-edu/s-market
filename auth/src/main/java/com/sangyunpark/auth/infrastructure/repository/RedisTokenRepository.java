@@ -33,4 +33,8 @@ public class RedisTokenRepository {
     public boolean exists(final String email) {
         return redisTemplate.hasKey(email);
     }
+
+    public Long getExpire(final String email) {
+        return redisTemplate.getExpire(email, TimeUnit.MILLISECONDS);
+    }
 }
