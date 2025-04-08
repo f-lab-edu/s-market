@@ -2,14 +2,16 @@ package com.sangyunpark.auth.application;
 
 import com.sangyunpark.auth.client.UserClient;
 import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.RegisterType;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.UserPrincipal;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
-import com.sangyunpark.auth.presentation.dto.response.LoginResponseDto;
+import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("NonAsciiCharacters")
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -66,11 +69,11 @@ class AuthServiceTest {
         // given
         when(userClient.findUserByEmail(loginRequest.email())).thenReturn(feignUser);
         when(passwordEncoder.matches(loginRequest.password(), feignUser.password())).thenReturn(true);
-        when(tokenProvider.createAccessToken(feignUser.email(), feignUser.userType())).thenReturn("access-token");
-        when(tokenProvider.createRefreshToken(feignUser.email(), feignUser.userType())).thenReturn("refresh-token");
+        when(tokenProvider.createAccessToken(feignUser.email(), feignUser.userType(), feignUser.userStatus())).thenReturn("access-token");
+        when(tokenProvider.createRefreshToken(feignUser.email(), feignUser.userType(), feignUser.userStatus())).thenReturn("refresh-token");
 
         // when
-        LoginResponseDto response = authService.login(loginRequest);
+        TokenResponseDto response = authService.login(loginRequest);
 
         // then
         assertThat(response.token().accessToken()).isEqualTo("access-token");
@@ -88,5 +91,40 @@ class AuthServiceTest {
         // when & then
         assertThatThrownBy(() -> authService.login(loginRequest))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("만료된 refreshToken으로 재발급 요청 시 예외 발생")
+    void 만료된_refreshToken_재발급_실패() {
+        // given
+        TokenProvider shortLivedProvider = new TokenProvider(
+                "your-256-bit-secret-key-should-be-long-enough",
+                1000L, // access
+                1L     // refresh = 1ms
+        );
+
+        String expiredRefreshToken = shortLivedProvider.createRefreshToken("test@example.com", UserType.NORMAL, UserStatus.ACTIVE);
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue(expiredRefreshToken, new UserPrincipal("test@example.com", UserType.NORMAL.name(), UserStatus.ACTIVE.name())))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.NOT_FOUND_TOKEN);
+    }
+
+    @Test
+    @DisplayName("저장되지 않은 refreshToken으로 재발급 요청 시 실패")
+    void 저장되지_않은_refreshToken_실패() {
+        // given
+        String email = "abc@example.com";
+        UserPrincipal principal = new UserPrincipal(email, "NORMAL", "ACTIVE");
+
+        String refreshToken = tokenProvider.createRefreshToken(email, UserType.NORMAL, UserStatus.ACTIVE);
+
+        // when & then
+        assertThatThrownBy(() -> authService.reissue(refreshToken, principal))
+                .isInstanceOf(BusinessException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.NOT_FOUND_TOKEN);
     }
 }
