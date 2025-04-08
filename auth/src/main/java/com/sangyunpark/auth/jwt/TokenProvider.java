@@ -2,7 +2,7 @@ package com.sangyunpark.auth.jwt;
 
 
 import com.sangyunpark.auth.constants.code.ErrorCode;
-import com.sangyunpark.auth.constants.type.UserType;
+import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.Date;
 
 @Component
-public class JwtProvider {
+public class TokenProvider {
 
     private final long accessTokenExpireTime;
     private final long refreshTokenExpireTime;
@@ -24,7 +24,7 @@ public class JwtProvider {
 
     private static final String USER_TYPE = "userType";
 
-    public JwtProvider
+    public TokenProvider
             (@Value("${jwt.secret-key}") final String secret,
              @Value("${jwt.accessToken-expiration}") final long accessTokenExpire,
              @Value("${jwt.refreshToken-expiration}") final long refreshTokenExpire) {
@@ -63,20 +63,20 @@ public class JwtProvider {
     }
 
     public String getEmail(final String token) {
-        return parseClaim(token, Claims.SUBJECT, String.class);
+        return parseClaim(token, Claims.SUBJECT);
 
     }
 
     public String getUserType(final String token) {
-        return parseClaim(token, USER_TYPE, String.class);
+        return parseClaim(token, USER_TYPE);
     }
 
-    private <T> T parseClaim(final String token, final String type, final Class<T> clazz) {
+    private String parseClaim(final String token, final String type) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .get(type, clazz);
+                .get(type, String.class);
     }
 }
