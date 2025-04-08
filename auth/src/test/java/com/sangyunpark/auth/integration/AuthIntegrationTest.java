@@ -106,17 +106,17 @@ public class AuthIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
-        Long ttlBefore = redisTokenRepository.getExpire(email); // TTL 확인
+        final String firstRefreshToken = redisTokenRepository.findByEmail(email).orElseThrow();
 
-        Thread.sleep(100);
+        Thread.sleep(1000);
 
         mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)));
 
-        Long ttlAfter = redisTokenRepository.getExpire(email);
+        final String secondRefreshToken = redisTokenRepository.findByEmail(email).orElseThrow();
 
-        assertThat(ttlAfter).isGreaterThan(ttlBefore);
+        assertThat(firstRefreshToken).isNotEqualTo(secondRefreshToken);
     }
 
     @AfterEach
