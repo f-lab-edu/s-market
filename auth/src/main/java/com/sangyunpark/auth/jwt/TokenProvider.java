@@ -2,6 +2,7 @@ package com.sangyunpark.auth.jwt;
 
 
 import com.sangyunpark.auth.constants.code.ErrorCode;
+import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import io.jsonwebtoken.Claims;
@@ -23,6 +24,7 @@ public class TokenProvider {
     private final Key secretKey;
 
     private static final String USER_TYPE = "userType";
+    private static final String USER_STATUS = "userStatus";
 
     public TokenProvider
             (@Value("${jwt.secret-key}") final String secret,
@@ -33,25 +35,26 @@ public class TokenProvider {
         this.refreshTokenExpireTime = refreshTokenExpire;
     }
 
-    public String createAccessToken(final String email, final UserType userType) {
-        return createToken(email, userType, accessTokenExpireTime);
+    public String createAccessToken(final String email, final UserType userType, final UserStatus userStatus) {
+        return createToken(email, userType, userStatus ,accessTokenExpireTime);
     }
 
-    public String createRefreshToken(final String email, final UserType userType) {
-        return createToken(email, userType, refreshTokenExpireTime);
+    public String createRefreshToken(final String email, final UserType userType, final UserStatus userStatus) {
+        return createToken(email, userType, userStatus ,refreshTokenExpireTime);
     }
 
-    private String createToken(final String email, final UserType userType, final Long expireTime) {
+    private String createToken(final String email, final UserType userType, final UserStatus userStatus, final Long expireTime) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(Date.from(Instant.now()))
                 .claim(USER_TYPE, userType.name())
+                .claim(USER_STATUS, userStatus.name())
                 .setExpiration(new Date(System.currentTimeMillis() + expireTime))
                 .signWith(secretKey)
                 .compact();
     }
 
-    public void validateToken(final String token) {
+    public boolean validateToken(final String token) {
         try {
             Jwts.parserBuilder()
                     .setSigningKey(secretKey)
@@ -60,6 +63,8 @@ public class TokenProvider {
         }catch (final JwtException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
+
+        return true;
     }
 
     public String getEmail(final String token) {
