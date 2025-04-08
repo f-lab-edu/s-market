@@ -40,6 +40,7 @@ public class UserMapper {
                 .registerType(user.getRegisterType())
                 .username(user.getUsername())
                 .email(user.getEmail())
+                .password(user.getPassword())
                 .build();
     }
 }
