@@ -4,6 +4,7 @@ import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,30 +28,20 @@ class TokenProviderTest {
     @Test
     @DisplayName("빈 토큰이면 예외를 던진다.")
     void 빈_토큰_예외() {
-        assertThatThrownBy(() -> tokenProvider.validateToken(""))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOKEN);
+        assertThat(tokenProvider.validateToken(" ")).isFalse();
     }
 
     @Test
     @DisplayName("null 토큰이면 예외가 발생한다.")
     void null_토큰_예외() {
-        assertThatThrownBy(() -> tokenProvider.validateToken(null))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOKEN);
+        assertThat(tokenProvider.validateToken(null)).isFalse();
     }
 
     @Test
     @DisplayName("정상적인 형식이 아닌 문자열이 토큰이면 예외가 발생한다.")
     void 잘못된_형식의_토큰_예외() {
         String malformedToken = "this-is-not-a-valid-jwt";
-
-        assertThatThrownBy(() -> tokenProvider.validateToken(malformedToken))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOKEN);
+        assertThat(tokenProvider.validateToken(malformedToken)).isFalse();
     }
 
     @Test
@@ -87,10 +78,7 @@ class TokenProviderTest {
         Thread.sleep(10); // token 만료 대기
 
         // when & then
-        assertThatThrownBy(() -> shortLivedProvider.validateToken(token))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOKEN);
+        assertThat(shortLivedProvider.validateToken(token)).isFalse();
     }
 
     @Test
@@ -106,10 +94,6 @@ class TokenProviderTest {
         );
 
         // when & then
-        assertThatThrownBy(() -> otherProvider.validateToken(token))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_TOKEN);
-
+        assertThat(otherProvider.validateToken(token)).isFalse();
     }
 }
