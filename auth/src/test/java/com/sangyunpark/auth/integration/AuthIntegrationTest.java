@@ -3,11 +3,13 @@ package com.sangyunpark.auth.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.auth.client.UserClient;
 import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.RegisterType;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.TokenValidator;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
 import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,6 +51,9 @@ public class AuthIntegrationTest {
 
     @Autowired
     TokenProvider tokenProvider;
+
+    @Autowired
+    TokenValidator tokenValidator;
 
     @MockitoBean
     private UserClient userClient;
@@ -92,6 +98,65 @@ public class AuthIntegrationTest {
         // then
         assertThat(redisTokenRepository.exists(email)).isTrue();
         assertThat(redisTokenRepository.findByEmail(email)).isPresent();
+    }
+
+    @Test
+    @DisplayName("accessToken을 입력하지 않는 경우 refreshToken 재발급 시 오류 발생")
+    void 리프레시_토큰_재발급_오류() throws Exception {
+        String email = "test@example.com";
+        LoginRequestDto request = new LoginRequestDto(email, "password123");
+
+        String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
+
+        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+                .email(email)
+                .password(newEncodedPassword)
+                .userType(UserType.NORMAL)
+                .userStatus(UserStatus.ACTIVE)
+                .registerType(RegisterType.EMAIL)
+                .username("상윤")
+                .phoneNumber("010-1234-5678")
+                .build();
+
+        when(userClient.findUserByEmail(email)).thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().is(ErrorCode.INVALID_TOKEN.getStatus().value()));
+    }
+
+    @Test
+    @DisplayName("유효하지 않은 accessToken을 입력하는 경우 refreshToken 재발급 시 오류 발생")
+    void 유효하지_않은_accessToken_토큰_재발급_오류() throws Exception {
+        String email = "test@example.com";
+        LoginRequestDto request = new LoginRequestDto(email, "password123");
+
+        String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
+
+        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+                .email(email)
+                .password(newEncodedPassword)
+                .userType(UserType.NORMAL)
+                .userStatus(UserStatus.ACTIVE)
+                .registerType(RegisterType.EMAIL)
+                .username("상윤")
+                .phoneNumber("010-1234-5678")
+                .build();
+
+        when(userClient.findUserByEmail(anyString())).thenReturn(userResponse);
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)));
+
+        mockMvc.perform(post("/api/v1/auth/reissue")
+                        .header("Authorization", "Bearer asdfsfs")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().is(ErrorCode.INVALID_TOKEN.getStatus().value()));
     }
 
     @Test
