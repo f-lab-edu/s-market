@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final String HEADER_REFRESH_TOKEN = "X-Refresh-Token";
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+
     private final AuthService authService;
 
     @PostMapping("/login")
@@ -22,7 +25,12 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public TokenResponseDto reissue(@RequestHeader("X-Refresh-Token") final String refreshToken, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    public TokenResponseDto reissue(@RequestHeader(HEADER_REFRESH_TOKEN) final String refreshToken, @AuthenticationPrincipal UserPrincipal userPrincipal) {
         return authService.reissue(refreshToken, userPrincipal);
+    }
+
+    @PostMapping("/logout")
+    public void logout(@RequestHeader(HEADER_AUTHORIZATION) final String accessToken) {
+        authService.logout(accessToken.substring(7));
     }
 }
