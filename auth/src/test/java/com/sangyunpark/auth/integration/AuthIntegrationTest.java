@@ -7,17 +7,22 @@ import com.sangyunpark.auth.constants.enums.RegisterType;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
+import com.sangyunpark.auth.jwt.TokenProvider;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
+import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -33,6 +38,7 @@ public class AuthIntegrationTest {
     private static final String EMAIL = "test@example.com";
     private static final String RAW_PASSWORD = "password123";
     private static final String LOGIN_URL = "/api/v1/auth/login";
+    private static final String LOGOUT_URL = "/api/v1/auth/logout";
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,11 +46,17 @@ public class AuthIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    TokenProvider tokenProvider;
+
     @MockitoBean
     private UserClient userClient;
 
     @Autowired
     private RedisTokenRepository redisTokenRepository;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
 
     @Test
@@ -119,8 +131,48 @@ public class AuthIntegrationTest {
         assertThat(firstRefreshToken).isNotEqualTo(secondRefreshToken);
     }
 
+    @Test
+    @DisplayName("로그아웃 요청 시, 해당 accessToken이 블랙리스트에 추가된다.")
+    void 로그아웃_요청() throws Exception {
+        // given
+        String email = "test@example.com";
+        LoginRequestDto request = new LoginRequestDto(email, "password123");
+
+        String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
+
+        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+                .email(email)
+                .password(newEncodedPassword)
+                .userType(UserType.NORMAL)
+                .userStatus(UserStatus.ACTIVE)
+                .registerType(RegisterType.EMAIL)
+                .username("상윤")
+                .phoneNumber("010-1234-5678")
+                .build();
+
+        when(userClient.findUserByEmail(email)).thenReturn(userResponse);
+
+        TokenResponseDto response = objectMapper.readValue(
+                mockMvc.perform(post(LOGIN_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.token.accessToken").exists()) // 응답에 accessToken이 포함되었는지 확인
+                        .andReturn().getResponse().getContentAsString(), TokenResponseDto.class
+        );
+
+        final String accessToken = response.token().accessToken();
+
+        mockMvc.perform(post(LOGOUT_URL)
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk());
+
+        assertThat(redisTokenRepository.isLogOutToken(accessToken)).isTrue();
+    }
+
     @AfterEach
     void tearDown() {
-        redisTokenRepository.delete(EMAIL);
+        Set<String> keys = stringRedisTemplate.keys("*");
+        stringRedisTemplate.delete(keys);
     }
 }
