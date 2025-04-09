@@ -1,13 +1,13 @@
 package com.sangyunpark.auth.global.filter;
 
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.TokenValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,8 +23,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final TokenProvider tokenProvider;
+    private final TokenValidator tokenValidator;
 
-    @SneakyThrows
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String token = resolveToken(request);
@@ -37,7 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isValidToken(String token) {
-        return token != null && tokenProvider.validateToken(token);
+        return tokenValidator.validateAccessToken(token);
     }
 
     private void setAuthenticationContext(String token) {
