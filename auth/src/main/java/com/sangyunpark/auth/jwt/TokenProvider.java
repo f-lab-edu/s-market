@@ -62,7 +62,7 @@ public class TokenProvider {
                     .parseClaimsJws(token);
 
         }catch (final JwtException | IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
+            return false;
         }
 
         return true;
@@ -75,6 +75,10 @@ public class TokenProvider {
 
     public String getUserType(final String token) {
         return parseClaims(token).get(USER_TYPE, String.class);
+    }
+
+    public String getUserStatus(final String token) {
+        return parseClaims(token).get(USER_STATUS, String.class);
     }
 
     public long getRemainingExpiration(String accessToken) {
