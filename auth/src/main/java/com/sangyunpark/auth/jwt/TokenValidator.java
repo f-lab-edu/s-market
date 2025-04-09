@@ -12,19 +12,6 @@ public class TokenValidator {
     private final RedisTokenRepository redisTokenRepository;
 
     public boolean validateAccessToken(final String accessToken) {
-
-        if(accessToken == null || accessToken.isBlank()) {
-            return false;
-        }
-
-        if(!tokenProvider.validateToken(accessToken)) {
-            return false;
-        }
-
-        if(redisTokenRepository.isLogOutToken(accessToken)) {
-            return false;
-        }
-
-        return true;
+        return accessToken != null && !accessToken.isBlank() && tokenProvider.validateToken(accessToken) && !redisTokenRepository.isLogOutToken(accessToken);
     }
 }
