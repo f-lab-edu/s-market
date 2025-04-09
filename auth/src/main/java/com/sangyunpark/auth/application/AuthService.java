@@ -63,4 +63,9 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
     }
+
+    public void logout(final String accessToken)  {
+        long remainingTime = tokenProvider.getRemainingExpiration(accessToken);
+        redisTokenRepository.saveLogOutToken(accessToken, remainingTime);
+    }
 }
