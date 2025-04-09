@@ -1,5 +1,6 @@
 package com.sangyunpark.auth.integration;
 
+import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.jwt.TokenProvider;
@@ -52,6 +53,6 @@ public class AuthorizationIntegrationTest {
     @DisplayName("토큰 없이 요청하면 401 Unauthorized")
     void 토큰_없는_경우_401() throws Exception {
         mockMvc.perform(get("/api/v1/admin/test"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().is(ErrorCode.INVALID_TOKEN.getStatus().value()));
     }
 }
