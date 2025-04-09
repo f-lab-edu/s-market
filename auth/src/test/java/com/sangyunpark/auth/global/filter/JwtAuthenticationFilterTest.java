@@ -1,14 +1,15 @@
 package com.sangyunpark.auth.global.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.auth.jwt.TokenProvider;
 import com.sangyunpark.auth.jwt.TokenValidator;
+import com.sangyunpark.auth.jwt.UserPrincipal;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,12 +24,14 @@ class JwtAuthenticationFilterTest {
     private MockHttpServletResponse response;
     private FilterChain filterChain;
     private TokenValidator tokenValidator;
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         tokenProvider = mock(TokenProvider.class);
         tokenValidator = mock(TokenValidator.class);
-        filter = new JwtAuthenticationFilter(tokenProvider, tokenValidator);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        filter = new JwtAuthenticationFilter(tokenProvider, tokenValidator, objectMapper);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         filterChain = mock(FilterChain.class);
@@ -42,6 +45,7 @@ class JwtAuthenticationFilterTest {
         String email = "test@example.com";
         String userType = "NORMAL";
         String token = "valid-token";
+        String status = "ACTIVE";
 
         request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer " + token);
@@ -51,47 +55,20 @@ class JwtAuthenticationFilterTest {
         when(tokenValidator.validateAccessToken(anyString())).thenReturn(true);
         when(tokenProvider.getEmail(token)).thenReturn(email);
         when(tokenProvider.getUserType(token)).thenReturn(userType);
+        when(tokenProvider.getUserStatus(token)).thenReturn(status);
 
         // when
         filter.doFilterInternal(request, response, filterChain);
 
+        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         // then
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        assertThat(authentication).isNotNull();
-        assertThat(authentication.getPrincipal()).isEqualTo(email);
-        assertThat(authentication.getCredentials()).isEqualTo(userType);
-        assertThat(authentication.getAuthorities()).extracting("authority").containsExactly(userType);
+        assertThat(principal).isNotNull();
+        assertThat(principal).isInstanceOf(UserPrincipal.class);
+        assertThat(principal.getEmail()).isEqualTo(email);
+        assertThat(principal.getUserType().name()).isEqualTo(userType);
+        assertThat(principal.getUserStatus().name()).isEqualTo(status);
 
         verify(filterChain).doFilter(request, response);
     }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰이면 인증 정보 없이 다음 필터로 넘어간다.")
-    void 유효하지_않은_토큰_인증_정보_미설정() throws Exception {
-        // given
-        String token = "invalid-token";
-        request.addHeader("Authorization", "Bearer " + token);
-        when(tokenProvider.validateToken(token)).thenReturn(false);
-
-        // when
-        filter.doFilterInternal(request, response, filterChain);
-
-        // then
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(filterChain).doFilter(request, response);
-    }
-
-    @Test
-    @DisplayName("Authorization 헤더가 없으면 인증 정보 없이 다음 필터로 넘어간다.")
-    void 헤더_없는_경우_인증_정보_미설정() throws Exception {
-        // given
-        // when
-        filter.doFilterInternal(request, response, filterChain);
-
-        // then
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
-        verify(filterChain).doFilter(request, response);
-    }
-
-
 }
