@@ -4,6 +4,7 @@ import com.sangyunpark.auth.global.filter.JwtAuthenticationFilter;
 import com.sangyunpark.auth.global.security.JwtAccessDeniedHandler;
 import com.sangyunpark.auth.global.security.JwtAuthenticationEntryPoint;
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.TokenValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final TokenProvider tokenProvider;
+    private final TokenValidator tokenValidator;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtAccessDeniedHandler accessDeniedHandler;
 
@@ -35,7 +37,7 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(handler ->
                         handler.authenticationEntryPoint(authenticationEntryPoint).accessDeniedHandler(accessDeniedHandler))
-                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthenticationFilter(tokenProvider, tokenValidator), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
