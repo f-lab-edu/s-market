@@ -33,4 +33,12 @@ public class RedisTokenRepository {
     public boolean exists(final String email) {
         return redisTemplate.hasKey(email);
     }
+
+    public void saveLogOutToken(final String accessToken, final long remainingTime) {
+        redisTemplate.opsForValue().set(accessToken, "logout", remainingTime, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean isLogOutToken(final String accessToken) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(accessToken));
+    }
 }
