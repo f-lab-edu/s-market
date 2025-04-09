@@ -60,6 +60,7 @@ public class TokenProvider {
                     .setSigningKey(secretKey)
                     .build()
                     .parseClaimsJws(token);
+
         }catch (final JwtException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
@@ -68,20 +69,24 @@ public class TokenProvider {
     }
 
     public String getEmail(final String token) {
-        return parseClaim(token, Claims.SUBJECT);
+        return parseClaims(token).getSubject();
 
     }
 
     public String getUserType(final String token) {
-        return parseClaim(token, USER_TYPE);
+        return parseClaims(token).get(USER_TYPE, String.class);
     }
 
-    private String parseClaim(final String token, final String type) {
+    public long getRemainingExpiration(String accessToken) {
+        Date expiration = parseClaims(accessToken).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    private Claims parseClaims(final String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
-                .getBody()
-                .get(type, String.class);
+                .getBody();
     }
 }
