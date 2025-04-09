@@ -1,6 +1,7 @@
 package com.sangyunpark.auth.global.filter;
 
 import com.sangyunpark.auth.jwt.TokenProvider;
+import com.sangyunpark.auth.jwt.TokenValidator;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,11 +22,13 @@ class JwtAuthenticationFilterTest {
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
     private FilterChain filterChain;
+    private TokenValidator tokenValidator;
 
     @BeforeEach
     void setUp() {
         tokenProvider = mock(TokenProvider.class);
-        filter = new JwtAuthenticationFilter(tokenProvider);
+        tokenValidator = mock(TokenValidator.class);
+        filter = new JwtAuthenticationFilter(tokenProvider, tokenValidator);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
         filterChain = mock(FilterChain.class);
@@ -45,7 +48,7 @@ class JwtAuthenticationFilterTest {
         response = new MockHttpServletResponse();
         filterChain = mock(FilterChain.class);
 
-        when(tokenProvider.validateToken(token)).thenReturn(true);
+        when(tokenValidator.validateAccessToken(anyString())).thenReturn(true);
         when(tokenProvider.getEmail(token)).thenReturn(email);
         when(tokenProvider.getUserType(token)).thenReturn(userType);
 
@@ -89,4 +92,6 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         verify(filterChain).doFilter(request, response);
     }
+
+
 }
