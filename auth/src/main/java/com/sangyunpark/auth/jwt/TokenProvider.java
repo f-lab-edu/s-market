@@ -1,10 +1,8 @@
 package com.sangyunpark.auth.jwt;
 
 
-import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
-import com.sangyunpark.auth.exception.BusinessException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -70,7 +68,6 @@ public class TokenProvider {
 
     public String getEmail(final String token) {
         return parseClaims(token).getSubject();
-
     }
 
     public String getUserType(final String token) {
@@ -81,7 +78,7 @@ public class TokenProvider {
         return parseClaims(token).get(USER_STATUS, String.class);
     }
 
-    public long getRemainingExpiration(String accessToken) {
+    public long getRemainingExpiration(final String accessToken) {
         Date expiration = parseClaims(accessToken).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();
     }

@@ -75,7 +75,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return header != null ? header.substring(BEARER_PREFIX.length()) : null;
     }
 
-    private void handleInvalidTokenResponse(HttpServletResponse response) throws IOException {
+    private void handleInvalidTokenResponse(final HttpServletResponse response) throws IOException {
         response.setStatus(ErrorCode.INVALID_TOKEN.getStatus().value());
         response.setContentType("application/json");
         response.getWriter().write(objectMapper.writeValueAsString(new ErrorResponse(ErrorCode.INVALID_TOKEN.getCode())));
