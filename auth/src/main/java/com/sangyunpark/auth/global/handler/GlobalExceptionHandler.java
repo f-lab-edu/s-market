@@ -3,6 +3,9 @@ package com.sangyunpark.auth.global.handler;
 import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.presentation.dto.response.ErrorResponse;
+import feign.FeignException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,7 +14,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler(NoFallbackAvailableException.class)
+    public ResponseEntity<ErrorResponse> handleNoFallbackAvailableException(HttpServletRequest request, NoFallbackAvailableException e) {
+        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+        return ResponseEntity.status(errorCode.getStatus()).body(new ErrorResponse(errorCode.getCode()));
+    }
+
+    @ExceptionHandler({Exception.class, FeignException.class})
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         ErrorCode errorCode  = ErrorCode.INTERNAL_SERVER_ERROR;
         return ResponseEntity.status(errorCode.getStatus()).body(new ErrorResponse(errorCode.getCode()));
