@@ -63,7 +63,7 @@ public class UserClientTest {
 
     @Test
     @DisplayName("FeignClient 요청 실패 시 NoFallbackAvailableException 처리된다.")
-    void testFeignClientExceptionHandling() throws Exception {
+    void 요청_실패시_예외_처리() throws Exception {
         // given
         String email = "test@example.com";
         String password = "password123";
