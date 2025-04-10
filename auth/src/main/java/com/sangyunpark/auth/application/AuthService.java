@@ -27,7 +27,7 @@ public class AuthService {
 
     public TokenResponseDto login(final LoginRequestDto loginRequestDto) {
 
-        final FeignUserSelectResponseDto user = userClient.findUserByEmail(loginRequestDto.email());
+        final FeignUserResponseDto user = userClient.findUserByEmail(loginRequestDto.email());
         validatePassword(loginRequestDto.password(), user.password());
         Token token = generateAndStoreToken(user.email(), user.userType(), user.userStatus());
         return new TokenResponseDto(token);
