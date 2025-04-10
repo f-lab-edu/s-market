@@ -1,6 +1,8 @@
 package com.sangyunpark.auth.client;
 
-import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.client.dto.response.FeignUserResponseDto;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import jakarta.validation.constraints.Email;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,5 +11,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface UserClient {
 
     @GetMapping("/api/v1/users")
-    FeignUserSelectResponseDto findUserByEmail(@RequestParam("email") String email);
+    @CircuitBreaker(name = "userService")
+    FeignUserResponseDto findUserByEmail(@RequestParam("email") @Email String email);
 }
