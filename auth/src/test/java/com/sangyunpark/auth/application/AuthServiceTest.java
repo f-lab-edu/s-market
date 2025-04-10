@@ -1,7 +1,7 @@
 package com.sangyunpark.auth.application;
 
 import com.sangyunpark.auth.client.UserClient;
-import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.client.dto.response.FeignUserResponseDto;
 import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.RegisterType;
 import com.sangyunpark.auth.constants.enums.UserStatus;
@@ -46,12 +46,12 @@ class AuthServiceTest {
     private AuthService authService;
 
     private LoginRequestDto loginRequest;
-    private FeignUserSelectResponseDto feignUser;
+    private FeignUserResponseDto feignUser;
 
     @BeforeEach
     void setUp() {
         loginRequest = new LoginRequestDto("test@example.com", "password123");
-        feignUser = new FeignUserSelectResponseDto(
+        feignUser = new FeignUserResponseDto(
                 1L,
                 "test@example.com",
                 "encodedPassword",
