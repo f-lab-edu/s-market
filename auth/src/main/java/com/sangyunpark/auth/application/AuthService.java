@@ -1,7 +1,7 @@
 package com.sangyunpark.auth.application;
 
 import com.sangyunpark.auth.client.UserClient;
-import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.client.dto.response.FeignUserResponseDto;
 import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.UserStatus;
 import com.sangyunpark.auth.constants.enums.UserType;
