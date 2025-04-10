@@ -6,7 +6,7 @@ import com.sangyunpark.auth.constants.enums.UserType;
 import lombok.Builder;
 
 @Builder
-public record FeignUserSelectResponseDto(
+public record FeignUserResponseDto(
         Long id,
         String email,
         String password,
