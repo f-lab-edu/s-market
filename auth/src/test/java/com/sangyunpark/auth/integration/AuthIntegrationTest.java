@@ -2,7 +2,7 @@ package com.sangyunpark.auth.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.auth.client.UserClient;
-import com.sangyunpark.auth.client.dto.response.FeignUserSelectResponseDto;
+import com.sangyunpark.auth.client.dto.response.FeignUserResponseDto;
 import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.constants.enums.RegisterType;
 import com.sangyunpark.auth.constants.enums.UserStatus;
@@ -74,7 +74,7 @@ public class AuthIntegrationTest {
 
         LoginRequestDto request = new LoginRequestDto(email, rawPassword);
 
-        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+        FeignUserResponseDto userResponse = FeignUserResponseDto.builder()
                 .id(1L)
                 .email(email)
                 .password(new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode(rawPassword))
@@ -108,7 +108,7 @@ public class AuthIntegrationTest {
 
         String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
 
-        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+        FeignUserResponseDto userResponse = FeignUserResponseDto.builder()
                 .email(email)
                 .password(newEncodedPassword)
                 .userType(UserType.NORMAL)
@@ -137,7 +137,7 @@ public class AuthIntegrationTest {
 
         String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
 
-        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+        FeignUserResponseDto userResponse = FeignUserResponseDto.builder()
                 .email(email)
                 .password(newEncodedPassword)
                 .userType(UserType.NORMAL)
@@ -167,7 +167,7 @@ public class AuthIntegrationTest {
 
         String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
 
-        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+        FeignUserResponseDto userResponse = FeignUserResponseDto.builder()
                 .email(email)
                 .password(newEncodedPassword)
                 .userType(UserType.NORMAL)
@@ -205,7 +205,7 @@ public class AuthIntegrationTest {
 
         String newEncodedPassword = new BCryptPasswordEncoder().encode("password123");
 
-        FeignUserSelectResponseDto userResponse = FeignUserSelectResponseDto.builder()
+        FeignUserResponseDto userResponse = FeignUserResponseDto.builder()
                 .email(email)
                 .password(newEncodedPassword)
                 .userType(UserType.NORMAL)
