@@ -1,7 +1,7 @@
 package org.sangyunpark.gateway.filter;
 
 import lombok.RequiredArgsConstructor;
-import org.sangyunpark.gateway.TokenValidator;
+import org.sangyunpark.gateway.application.AuthenticationService;
 import org.sangyunpark.gateway.constant.code.ErrorCode;
 import org.sangyunpark.gateway.filter.vo.WhiteListVo;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -31,11 +31,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private static final String BEARER_PREFIX = "Bearer";
     private static final String ERROR_RESPONSE_FORMAT = "{\"code\":\"%s\"}";
 
-    private final TokenValidator tokenValidator;
+    private final AuthenticationService authenticationService;
 
     @Override
     public Mono<Void> filter(final ServerWebExchange exchange, final GatewayFilterChain chain) {
-
         final ServerHttpRequest request = exchange.getRequest();
 
         if(isWhitelisted(request)) {
@@ -43,12 +42,11 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         }
 
         final String token = resolveToken(exchange.getRequest());
-
-        if(token == null || !tokenValidator.validateToken(token)) {
+        if(token == null) {
             return unauthorized(exchange);
         }
 
-        return chain.filter(exchange);
+        return authenticationService.isValidToken(token).flatMap(isValid -> isValid? chain.filter(exchange) : unauthorized(exchange));
     }
 
     private boolean isWhitelisted(ServerHttpRequest request) {
