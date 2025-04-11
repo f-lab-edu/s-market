@@ -1,4 +1,4 @@
-package org.sangyunpark.gateway;
+package org.sangyunpark.gateway.jwt;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
