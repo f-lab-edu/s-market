@@ -3,8 +3,10 @@ package org.sangyunpark.gateway.filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.sangyunpark.gateway.TokenValidator;
+import org.sangyunpark.gateway.application.AuthenticationService;
 import org.sangyunpark.gateway.constant.code.ErrorCode;
+import org.sangyunpark.gateway.infrastructure.redis.TokenBlackListRepository;
+import org.sangyunpark.gateway.jwt.TokenValidator;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,54 +16,53 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SuppressWarnings("NonAsciiCharacters")
 class AuthenticationFilterTest {
 
-    private static final String USER_URL = "/api/v1/users";
-    private static final String SECURE_ENDPOINT = "/secure-endpoint";
     private static final String BEARER = "Bearer ";
+    private static final String VALID_TOKEN = "valid-token";
     private static final String INVALID_TOKEN = "invalid-token";
 
-    private TokenValidator tokenValidator;
-    private AuthenticationFilter filter;
+    private AuthenticationService authenticationService;
     private GatewayFilterChain filterChain;
+    private AuthenticationFilter filter;
+    private TokenBlackListRepository tokenBlackListRepository;
+    private TokenValidator tokenValidator;
 
     @BeforeEach
     void setUp() {
         tokenValidator = mock(TokenValidator.class);
-        filter = new AuthenticationFilter(tokenValidator);
+        tokenBlackListRepository= mock(TokenBlackListRepository.class);
+        authenticationService = new AuthenticationService(tokenValidator,tokenBlackListRepository);
         filterChain = mock(GatewayFilterChain.class);
+        filter = new AuthenticationFilter(authenticationService);
     }
 
     @Test
-    @DisplayName("화이트리스트 경로는 토큰 없이 통과해야 한다")
+    @DisplayName("화이트리스트 경로는 토큰 없이 통과")
     void 화이트리스트_경로는_토큰_없이_통과() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .post(USER_URL)
-                .build();
-        ServerWebExchange exchange = MockServerWebExchange.from(request);
+        ServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/users").build()
+        );
 
         when(filterChain.filter(exchange)).thenReturn(Mono.empty());
 
-        Mono<Void> result = filter.filter(exchange, filterChain);
+        StepVerifier.create(filter.filter(exchange, filterChain))
+                .verifyComplete();
 
-        StepVerifier.create(result).verifyComplete();
+        verify(filterChain, times(1)).filter(exchange);
     }
 
     @Test
     @DisplayName("Authorization 헤더가 없으면 401 반환")
-    void Authorization_헤더가_없으면_401_반환() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get(SECURE_ENDPOINT)
-                .build();
-        ServerWebExchange exchange = MockServerWebExchange.from(request);
+    void 헤더_없으면_401() {
+        ServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/secure").build()
+        );
 
-        Mono<Void> result = filter.filter(exchange, filterChain);
-
-        StepVerifier.create(result)
+        StepVerifier.create(filter.filter(exchange, filterChain))
                 .then(() -> {
                     HttpStatus status = (HttpStatus) exchange.getResponse().getStatusCode();
                     assert status == ErrorCode.INVALID_TOKEN.getStatus();
@@ -71,18 +72,17 @@ class AuthenticationFilterTest {
 
     @Test
     @DisplayName("토큰이 유효하지 않으면 401 반환")
-    void 토큰이_유효하지_않으면_401_반환() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get(SECURE_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, BEARER + INVALID_TOKEN)
-                .build();
-        ServerWebExchange exchange = MockServerWebExchange.from(request);
+    void 유효하지_않은_토큰은_401() {
+        ServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/secure")
+                        .header(HttpHeaders.AUTHORIZATION, BEARER + INVALID_TOKEN)
+                        .build()
+        );
 
-        when(tokenValidator.validateToken(INVALID_TOKEN)).thenReturn(false);
+        when(tokenValidator.validateToken(anyString())).thenReturn(true);
+        when(tokenBlackListRepository.isBlackList(anyString())).thenReturn(Mono.just(false));
 
-        Mono<Void> result = filter.filter(exchange, filterChain);
-
-        StepVerifier.create(result)
+        StepVerifier.create(filter.filter(exchange, filterChain))
                 .then(() -> {
                     HttpStatus status = (HttpStatus) exchange.getResponse().getStatusCode();
                     assert status == ErrorCode.INVALID_TOKEN.getStatus();
@@ -91,19 +91,21 @@ class AuthenticationFilterTest {
     }
 
     @Test
-    @DisplayName("유효한 토큰이면 필터 체인을 통과함")
-    void 유효한_토큰이면_필터체인_통과() {
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get(SECURE_ENDPOINT)
-                .header(HttpHeaders.AUTHORIZATION, BEARER + INVALID_TOKEN)
-                .build();
-        ServerWebExchange exchange = MockServerWebExchange.from(request);
+    @DisplayName("유효한 토큰이면 필터 체인 통과")
+    void 유효한_토큰은_통과() {
+        ServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/secure")
+                        .header(HttpHeaders.AUTHORIZATION, BEARER + VALID_TOKEN)
+                        .build()
+        );
 
-        when(tokenValidator.validateToken(INVALID_TOKEN)).thenReturn(true);
+        when(tokenValidator.validateToken(anyString())).thenReturn(true);
+        when(tokenBlackListRepository.isBlackList(anyString())).thenReturn(Mono.just(true));
         when(filterChain.filter(exchange)).thenReturn(Mono.empty());
 
-        Mono<Void> result = filter.filter(exchange, filterChain);
+        StepVerifier.create(filter.filter(exchange, filterChain))
+                .verifyComplete();
 
-        StepVerifier.create(result).verifyComplete();
+        verify(filterChain, times(1)).filter(exchange);
     }
 }
