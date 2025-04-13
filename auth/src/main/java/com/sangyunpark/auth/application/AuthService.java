@@ -56,12 +56,9 @@ public class AuthService {
     }
 
     private void validateStoredRefreshToken(final String email, final String requestToken) {
-        String storedToken = redisTokenRepository.findByEmail(email)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_TOKEN));
-
-        if (!storedToken.equals(requestToken)) {
-            throw new BusinessException(ErrorCode.INVALID_TOKEN);
-        }
+        redisTokenRepository.findByEmail(email)
+                .filter(storedToken -> storedToken.equals(requestToken))
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_TOKEN));
     }
 
     public void logout(final String accessToken)  {
