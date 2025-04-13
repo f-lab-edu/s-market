@@ -41,7 +41,7 @@ class AuthControllerTest {
     void loginSuccess() throws Exception {
         // given
         LoginRequestDto request = new LoginRequestDto("test@example.com", "password123");
-        TokenResponseDto response = new TokenResponseDto(Token.of("access-token", "refresh-token"));
+        TokenResponseDto response = new TokenResponseDto(new Token("access-token", "refresh-token"));
 
         when(authService.login(any(LoginRequestDto.class))).thenReturn(response);
 
