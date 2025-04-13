@@ -109,7 +109,7 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.reissue(expiredRefreshToken, new UserPrincipal("test@example.com", UserType.NORMAL.name(), UserStatus.ACTIVE.name())))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.NOT_FOUND_TOKEN);
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 
     @Test
@@ -125,6 +125,6 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.reissue(refreshToken, principal))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
-                .isEqualTo(ErrorCode.NOT_FOUND_TOKEN);
+                .isEqualTo(ErrorCode.INVALID_TOKEN);
     }
 }
