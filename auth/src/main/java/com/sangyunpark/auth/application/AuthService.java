@@ -52,7 +52,7 @@ public class AuthService {
         final String refreshToken = tokenProvider.createRefreshToken(email, userType, userStatus);
 
         redisTokenRepository.save(email, refreshToken);
-        return Token.of(accessToken, refreshToken);
+        return new Token(accessToken, refreshToken);
     }
 
     private void validateStoredRefreshToken(final String email, final String requestToken) {
