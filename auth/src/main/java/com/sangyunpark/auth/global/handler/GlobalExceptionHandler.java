@@ -4,7 +4,6 @@ import com.sangyunpark.auth.constants.code.ErrorCode;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.presentation.dto.response.ErrorResponse;
 import feign.FeignException;
-import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
