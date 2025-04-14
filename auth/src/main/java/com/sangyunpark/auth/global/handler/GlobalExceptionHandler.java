@@ -13,12 +13,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(NoFallbackAvailableException.class)
-    public ResponseEntity<ErrorResponse> handleNoFallbackAvailableException() {
-        ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
-        return ResponseEntity.status(errorCode.getStatus()).body(new ErrorResponse(errorCode.getCode()));
-    }
-
     @ExceptionHandler({Exception.class, FeignException.class})
     public ResponseEntity<ErrorResponse> handleException() {
         ErrorCode errorCode  = ErrorCode.INTERNAL_SERVER_ERROR;
