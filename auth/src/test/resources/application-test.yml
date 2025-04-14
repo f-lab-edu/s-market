@@ -1,0 +1,12 @@
+spring:
+  data:
+    redis:
+      repositories:
+        enabled: false
+      port: 6379
+      host: localhost
+
+jwt:
+  secret-key: test-jwt-secret-key-12345678901234567890123456789012
+  accessToken-expiration: 3600000      # 1시간
+  refreshToken-expiration: 1209600000  # 14일
