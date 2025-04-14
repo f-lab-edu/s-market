@@ -9,6 +9,7 @@ import lombok.Builder;
 public record UserSelectResponseDto(
         Long id,
         String email,
+        String password,
         String username,
         UserType userType,
         UserStatus userStatus,
