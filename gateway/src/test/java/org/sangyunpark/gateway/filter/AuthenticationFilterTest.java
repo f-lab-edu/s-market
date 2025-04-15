@@ -1,13 +1,12 @@
 package org.sangyunpark.gateway.filter;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.sangyunpark.gateway.application.AuthenticationService;
 import org.sangyunpark.gateway.constant.code.ErrorCode;
-import org.sangyunpark.gateway.infrastructure.redis.TokenBlackListRepository;
+import org.sangyunpark.gateway.filter.dto.CachedUser;
+import org.sangyunpark.gateway.infrastructure.redis.RedisTokenRepository;
 import org.sangyunpark.gateway.jwt.TokenProvider;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
@@ -28,18 +27,20 @@ class AuthenticationFilterTest {
     private static final String VALID_TOKEN = "valid-token";
     private static final String INVALID_TOKEN = "invalid-token";
     private static final String EMAIL = "user@example.com";
+    private static final String USER_TYPE = "userType";
+    private static final String USER_STATUS = "userStatus";
 
     private GatewayFilterChain filterChain;
     private AuthenticationFilter filter;
-    private TokenBlackListRepository tokenBlackListRepository;
+    private RedisTokenRepository redisTokenRepository;
     private TokenProvider tokenProvider;
     private AuthenticationService authenticationService;
 
     @BeforeEach
     void setUp() {
-        tokenBlackListRepository= mock(TokenBlackListRepository.class);
+        redisTokenRepository = mock(RedisTokenRepository.class);
         tokenProvider = mock(TokenProvider.class);
-        authenticationService = new AuthenticationService(tokenProvider, tokenBlackListRepository);
+        authenticationService = mock(AuthenticationService.class);
         filterChain = mock(GatewayFilterChain.class);
         filter = new AuthenticationFilter(authenticationService, tokenProvider);
     }
@@ -83,7 +84,7 @@ class AuthenticationFilterTest {
                         .build()
         );
 
-        when(tokenBlackListRepository.isBlackList(anyString())).thenReturn(Mono.just(false));
+        when(redisTokenRepository.isBlackList(anyString())).thenReturn(Mono.just(false));
 
         StepVerifier.create(filter.filter(exchange, filterChain))
                 .then(() -> {
@@ -97,51 +98,46 @@ class AuthenticationFilterTest {
     @DisplayName("유효한 토큰이면 필터 체인 통과")
     void 유효한_토큰은_통과() {
         // given
-        Claims mockClaims = Jwts.claims();
-        mockClaims.setSubject(EMAIL);
-        mockClaims.put("userType", "NORMAL");
-        mockClaims.put("userStatus", "ACTIVE");
+        CachedUser user = new CachedUser(EMAIL, USER_TYPE, USER_STATUS);
 
         ServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.get("/api/v1/products") // 화이트리스트에 포함되지 않은 URL
+                MockServerHttpRequest.get("/api/v1/products") // 화이트리스트가 아닌 URL
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + VALID_TOKEN)
                         .build()
         );
 
-        // when
         when(tokenProvider.resolveToken(any())).thenReturn(VALID_TOKEN);
-        when(tokenBlackListRepository.isBlackList(VALID_TOKEN)).thenReturn(Mono.just(false));
-        when(tokenProvider.parseClaims(VALID_TOKEN)).thenReturn(mockClaims);
-        when(filterChain.filter(any(ServerWebExchange.class))).thenReturn(Mono.empty());
+        when(authenticationService.getAuthenticatedUser(VALID_TOKEN)).thenReturn(Mono.just(user));
+        when(filterChain.filter(any())).thenReturn(Mono.empty());
 
-        // then
+        // when, then
         StepVerifier.create(filter.filter(exchange, filterChain))
                 .verifyComplete();
 
-        verify(filterChain, times(1)).filter(any(ServerWebExchange.class));
+        verify(filterChain, times(1)).filter(any());
     }
 
     @Test
     @DisplayName("일반 유저가 정상 API 접근 허용")
     void 일반_유저가_정상_API_접근_허용() {
-        Claims claims = createClaims(EMAIL, "NORMAL");
+        // given
+        CachedUser user = new CachedUser(EMAIL, USER_TYPE, USER_STATUS);
 
         when(tokenProvider.resolveToken(any())).thenReturn(VALID_TOKEN);
-        when(tokenProvider.parseClaims(VALID_TOKEN)).thenReturn(claims);
-        when(tokenBlackListRepository.isBlackList(VALID_TOKEN)).thenReturn(Mono.just(false));
+        when(authenticationService.getAuthenticatedUser(VALID_TOKEN)).thenReturn(Mono.just(user));
         when(filterChain.filter(any())).thenReturn(Mono.empty());
 
         MockServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.get("/api/v1/users")
-                .header(HttpHeaders.AUTHORIZATION, BEARER + VALID_TOKEN)
-                .build()
+                MockServerHttpRequest.get("/api/v1/users") // 관리자 전용 X
+                        .header(HttpHeaders.AUTHORIZATION, BEARER + VALID_TOKEN)
+                        .build()
         );
 
+        // when
         Mono<Void> result = filter.filter(exchange, filterChain);
 
-        StepVerifier.create(result)
-                .verifyComplete();
-
+        // then
+        StepVerifier.create(result).verifyComplete();
         verify(filterChain, times(1)).filter(any(ServerWebExchange.class));
     }
 
@@ -150,14 +146,13 @@ class AuthenticationFilterTest {
     @DisplayName("관리자 권한 없이 관리자 API에 접근하면 401 Unauthorized를 반환한다")
     void 관리자_권한_없으면_인가_실패() {
         // given
-        Claims claims = createClaims(EMAIL, "NORMAL");
+        CachedUser user = new CachedUser(EMAIL, USER_TYPE, USER_STATUS);
 
         when(tokenProvider.resolveToken(any())).thenReturn(VALID_TOKEN);
-        when(tokenBlackListRepository.isBlackList(VALID_TOKEN)).thenReturn(Mono.just(false));
-        when(tokenProvider.parseClaims(VALID_TOKEN)).thenReturn(claims);
+        when(authenticationService.getAuthenticatedUser(VALID_TOKEN)).thenReturn(Mono.just(user));
 
         ServerWebExchange exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.get("/api/v1/admin/test")
+                MockServerHttpRequest.get("/api/v1/admin/test") // 관리자 전용 URL
                         .header(HttpHeaders.AUTHORIZATION, BEARER + VALID_TOKEN)
                         .build()
         );
@@ -173,13 +168,4 @@ class AuthenticationFilterTest {
 
         verify(filterChain, never()).filter(any());
     }
-
-    private Claims createClaims(final String email, final String role) {
-        Claims claims = mock(Claims.class);
-        when(claims.getSubject()).thenReturn(email);
-        when(claims.get("userType", String.class)).thenReturn(role);
-        when(claims.get("userStatus", String.class)).thenReturn("ACTIVE");
-        return claims;
-    }
-
 }
