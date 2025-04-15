@@ -37,10 +37,10 @@ public class RedisTokenRepository {
     }
 
     public void saveLogOutToken(final String accessToken, final long remainingTime) {
-        redisTemplate.opsForValue().set(accessToken, BLACK_LIST_KEY + accessToken, remainingTime, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(BLACK_LIST_KEY + accessToken,"", remainingTime, TimeUnit.MILLISECONDS);
     }
 
     public boolean isLogOutToken(final String accessToken) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(accessToken));
+        return Boolean.TRUE.equals(redisTemplate.hasKey(BLACK_LIST_KEY + accessToken));
     }
 }
