@@ -3,6 +3,7 @@ package org.sangyunpark.gateway.filter.utils;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.sangyunpark.gateway.filter.dto.CachedUser;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -26,7 +27,7 @@ class RequestMutationUtilsTest {
         ServerWebExchange exchange = MockServerWebExchange.from(request);
 
         // when
-        ServerWebExchange mutatedExchange = RequestMutationUtils.mutateRequestWithClaims(exchange, claims);
+        ServerWebExchange mutatedExchange = RequestMutationUtils.mutateRequestWithClaims(exchange, new CachedUser("user@example.com", "NORMAL", "ACTIVE"));
         ServerHttpRequest mutatedRequest = mutatedExchange.getRequest();
 
         // then
