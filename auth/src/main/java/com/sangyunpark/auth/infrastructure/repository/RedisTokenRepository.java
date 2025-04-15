@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 @Repository
 public class RedisTokenRepository {
 
+    private static final String BLACK_LIST_KEY = "black_list:";
+
     private final StringRedisTemplate redisTemplate;
     private final long refreshTokenExpireTime;
 
@@ -35,7 +37,7 @@ public class RedisTokenRepository {
     }
 
     public void saveLogOutToken(final String accessToken, final long remainingTime) {
-        redisTemplate.opsForValue().set(accessToken, "logout", remainingTime, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(accessToken, BLACK_LIST_KEY + accessToken, remainingTime, TimeUnit.MILLISECONDS);
     }
 
     public boolean isLogOutToken(final String accessToken) {
