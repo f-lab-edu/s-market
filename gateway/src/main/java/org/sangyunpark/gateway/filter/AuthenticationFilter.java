@@ -1,10 +1,11 @@
 package org.sangyunpark.gateway.filter;
 
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.sangyunpark.gateway.application.AuthenticationService;
 import org.sangyunpark.gateway.constant.code.ErrorCode;
 import org.sangyunpark.gateway.constant.code.UserType;
+import org.sangyunpark.gateway.filter.dto.CachedUser;
 import org.sangyunpark.gateway.jwt.TokenProvider;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -19,11 +20,11 @@ import static org.sangyunpark.gateway.filter.matcher.WhitelistMatcher.isWhitelis
 import static org.sangyunpark.gateway.filter.utils.HttpResponseUtils.unauthorized;
 import static org.sangyunpark.gateway.filter.utils.RequestMutationUtils.mutateRequestWithClaims;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AuthenticationFilter implements GlobalFilter {
 
-    private static final String USER_TYPE = "userType";
     private final AuthenticationService authenticationService;
     private final TokenProvider tokenProvider;
 
@@ -48,25 +49,25 @@ public class AuthenticationFilter implements GlobalFilter {
     }
 
     private Mono<Void> handleLogoutRequest(final String token, final GatewayFilterChain chain, final ServerWebExchange exchange) {
-        return authenticationService.extractClaims(token)
-                .flatMap(claims -> chain.filter(exchange))
+        return authenticationService.logout(token)
+                .then(Mono.defer(() -> chain.filter(exchange)))
                 .onErrorResume(e -> unauthorized(exchange, ErrorCode.INVALID_TOKEN));
     }
 
     private Mono<Void> handleAuthorizedRequest(final String token, final GatewayFilterChain chain, final ServerWebExchange exchange) {
-        return authenticationService.extractClaims(token)
-                .flatMap(claims -> authorizeAndMutateRequest(exchange, chain, claims))
+        return authenticationService.getAuthenticatedUser(token)
+                .flatMap(cachedUser -> authorizeAndMutateRequest(exchange, chain, cachedUser))
                 .onErrorResume(e -> unauthorized(exchange, ErrorCode.INVALID_TOKEN));
     }
 
-    private Mono<Void> authorizeAndMutateRequest(final ServerWebExchange exchange, final GatewayFilterChain chain, final Claims claims) {
+    private Mono<Void> authorizeAndMutateRequest(final ServerWebExchange exchange, final GatewayFilterChain chain, final CachedUser user) {
         final ServerHttpRequest request = exchange.getRequest();
-        final String role = claims.get(USER_TYPE, String.class);
+        final String role = user.userType();
 
         if (isAdminUrl(request) && !UserType.ADMIN.name().equals(role)) {
             return unauthorized(exchange,ErrorCode.INVALID_TOKEN);
         }
 
-        return chain.filter(mutateRequestWithClaims(exchange, claims));
+        return chain.filter(mutateRequestWithClaims(exchange, user));
     }
 }
