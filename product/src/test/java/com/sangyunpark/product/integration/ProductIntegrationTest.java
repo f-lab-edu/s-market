@@ -150,4 +150,215 @@ class ProductIntegrationTest {
                 .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
     }
 
+    @Test
+    @DisplayName("상품 수정 후 변경된 내용이 조회되어야 한다")
+    void 상품_수정_성공_확인() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        ProductRequestDto request = new ProductRequestDto(
+                categoryId, "노트북", "기존 설명", 1500000L, true, now, now.plusDays(1)
+        );
+
+        String response = mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Long productId = Long.parseLong(response);
+
+        ProductRequestDto update = new ProductRequestDto(
+                categoryId, "게이밍 노트북", "변경된 설명", 1800000L, false, now, now.plusDays(10)
+        );
+
+        mockMvc.perform(put("/api/v1/admin/products/" + productId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(update)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/admin/products/" + productId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("게이밍 노트북"))
+                .andExpect(jsonPath("$.description").value("변경된 설명"))
+                .andExpect(jsonPath("$.price").value(1800000))
+                .andExpect(jsonPath("$.visible").value(false));
+    }
+
+    @Test
+    @DisplayName("커서 기반 조회 - 첫 페이지 조회 성공")
+    void 커서_기반_첫_페이지_조회() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 1; i <= 5; i++) {
+            ProductRequestDto dto = new ProductRequestDto(
+                    categoryId,
+                    "상품 " + i,
+                    "설명 " + i,
+                    1000L + i,
+                    true,
+                    now.minusDays(1),
+                    now.plusDays(1)
+            );
+            mockMvc.perform(post("/api/v1/admin/products")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("size", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.nextCursor").exists())
+                .andExpect(jsonPath("$.nextId").exists());
+    }
+
+    @Test
+    @DisplayName("페이지 기반 필터 조회 - 카테고리 조건 적용")
+    void 페이지_기반_필터_조회() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+
+        for (int i = 1; i <= 8; i++) {
+            ProductRequestDto dto = new ProductRequestDto(
+                    categoryId,
+                    "필터 상품 " + i,
+                    "필터 설명 " + i,
+                    1000L + i,
+                    true,
+                    now.minusDays(1),
+                    now.plusDays(1)
+            );
+            mockMvc.perform(post("/api/v1/admin/products")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products/search")
+                        .param("categoryId", String.valueOf(categoryId))
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(5))
+                .andExpect(jsonPath("$.totalElements").value(8));
+    }
+
+    @Test
+    @DisplayName("페이지 기반 조회 - 정렬 옵션(price_asc) 적용")
+    void 페이지_기반_조회_정렬_오름차순() throws Exception {
+        for (int i = 1; i <= 5; i++) {
+            ProductRequestDto dto = new ProductRequestDto(
+                    categoryId,
+                    "상품 " + i,
+                    "가격 테스트",
+                    10000L + i * 10,
+                    true,
+                    LocalDateTime.now().minusDays(1),
+                    LocalDateTime.now().plusDays(1)
+            );
+            mockMvc.perform(post("/api/v1/admin/products")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products/search")
+                        .param("sort", "price_asc")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].price").value(10010L));
+    }
+
+    @Test
+    @DisplayName("페이지 기반 조회 - 가격 필터(minPrice, maxPrice) 적용")
+    void 페이지_기반_가격_필터() throws Exception {
+        for (int i = 1; i <= 5; i++) {
+            ProductRequestDto dto = new ProductRequestDto(
+                    categoryId,
+                    "가격 필터 상품 " + i,
+                    "가격 조건",
+                    10000L + i * 1000,
+                    true,
+                    LocalDateTime.now().minusDays(1),
+                    LocalDateTime.now().plusDays(1)
+            );
+            mockMvc.perform(post("/api/v1/admin/products")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products/search")
+                        .param("minPrice", "11000")
+                        .param("maxPrice", "13000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3));
+    }
+
+    @Test
+    @DisplayName("페이지 기반 조회 - 키워드 필터(keyword) 적용")
+    void 페이지_기반_키워드_필터() throws Exception {
+        for (int i = 1; i <= 3; i++) {
+            ProductRequestDto dto = new ProductRequestDto(
+                    categoryId,
+                    "노트북 " + i,
+                    "전자제품",
+                    10000L,
+                    true,
+                    LocalDateTime.now().minusDays(1),
+                    LocalDateTime.now().plusDays(1)
+            );
+            mockMvc.perform(post("/api/v1/admin/products")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(dto)))
+                    .andExpect(status().isOk());
+        }
+
+        mockMvc.perform(get("/api/v1/admin/products/search")
+                        .param("keyword", "노트북"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.content[0].title").value(org.hamcrest.Matchers.containsString("노트북")));
+    }
+
+    @Test
+    @DisplayName("비가시 상품은 커서 기반 조회에서 제외되어야 한다")
+    void 커서_기반_조회_비가시_상품_제외() throws Exception {
+        // given
+        ProductRequestDto hiddenDto = new ProductRequestDto(
+                categoryId, "숨김 상품", "비공개", 1000L, false,
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1)
+        );
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(hiddenDto)))
+                .andExpect(status().isOk());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/admin/products")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].title").value(org.hamcrest.Matchers.not(org.hamcrest.Matchers.hasItem("숨김 상품"))));
+    }
+
+    @Test
+    @DisplayName("비가시 상품은 필터 기반 조회에서도 제외되어야 한다")
+    void 필터_기반_조회_비가시_상품_제외() throws Exception {
+        // given
+        ProductRequestDto hiddenDto = new ProductRequestDto(
+                categoryId, "숨김 상품", "비공개", 1000L, false,
+                LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1)
+        );
+
+        mockMvc.perform(post("/api/v1/admin/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(hiddenDto)))
+                .andExpect(status().isOk());
+
+        // when & then
+        mockMvc.perform(get("/api/v1/admin/products/search")
+                        .param("keyword", "숨김"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(0));
+    }
 }
