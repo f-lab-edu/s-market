@@ -6,22 +6,49 @@ import com.sangyunpark.product.domain.entity.Product;
 import com.sangyunpark.product.domain.mapper.ProductMapper;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.repository.ProductJpaRepository;
+import com.sangyunpark.product.infrastructure.repository.ProductQueryRepository;
+import com.sangyunpark.product.infrastructure.repository.condition.ProductFilterCondition;
+import com.sangyunpark.product.presentation.dto.ProductDto;
+import com.sangyunpark.product.presentation.dto.request.ProductCursorRequestDto;
 import com.sangyunpark.product.presentation.dto.request.ProductRequestDto;
+import com.sangyunpark.product.presentation.dto.response.ProductCursorResponseDto;
 import com.sangyunpark.product.presentation.dto.response.ProductResponseDto;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ProductService {
 
     private final ProductJpaRepository productJpaRepository;
+    private final ProductQueryRepository productQueryRepository;
     private final CategoryService categoryService;
     private final ProductMapper productMapper;
 
     public ProductResponseDto findById(final Long id) {
         return productMapper.toDto(productJpaRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND)));
+    }
+
+    public ProductCursorResponseDto<ProductDto> getPagedProducts(final ProductCursorRequestDto request) {
+        LocalDateTime now = LocalDateTime.now();
+        List<ProductDto> content = productQueryRepository.findByCursor(request.cursor(), request.lastId(), request.size(), now);
+
+        if(content.isEmpty()) {
+            return new ProductCursorResponseDto<>(content, null, null);
+        }
+
+        ProductDto last = content.get(content.size() - 1);
+        return new ProductCursorResponseDto<>(content, last.createdAt() ,last.id());
+    }
+
+    public Page<ProductDto> getFilteredProducts(final ProductFilterCondition condition, final Pageable pageable) {
+        return productQueryRepository.searchByFilter(condition, pageable);
     }
 
     @Transactional
