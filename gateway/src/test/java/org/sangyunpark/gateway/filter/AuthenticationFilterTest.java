@@ -6,11 +6,16 @@ import org.junit.jupiter.api.Test;
 import org.sangyunpark.gateway.application.AuthenticationService;
 import org.sangyunpark.gateway.constant.code.ErrorCode;
 import org.sangyunpark.gateway.filter.dto.CachedUser;
+import org.sangyunpark.gateway.filter.matcher.UrlMatcher;
+import org.sangyunpark.gateway.filter.matcher.WhitelistMatcher;
+import org.sangyunpark.gateway.filter.utils.HttpResponseUtils;
+import org.sangyunpark.gateway.filter.utils.RequestMutationUtils;
 import org.sangyunpark.gateway.infrastructure.redis.RedisTokenRepository;
 import org.sangyunpark.gateway.jwt.TokenProvider;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
@@ -23,18 +28,22 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("NonAsciiCharacters")
 class AuthenticationFilterTest {
 
-    private static final String BEARER = "Bearer ";
-    private static final String VALID_TOKEN = "valid-token";
-    private static final String INVALID_TOKEN = "invalid-token";
-    private static final String EMAIL = "user@example.com";
-    private static final String USER_TYPE = "userType";
-    private static final String USER_STATUS = "userStatus";
+    private final String BEARER = "Bearer ";
+    private final String VALID_TOKEN = "valid-token";
+    private final String INVALID_TOKEN = "invalid-token";
+    private final String EMAIL = "user@example.com";
+    private final String USER_TYPE = "userType";
+    private final String USER_STATUS = "userStatus";
 
     private GatewayFilterChain filterChain;
     private AuthenticationFilter filter;
     private RedisTokenRepository redisTokenRepository;
     private TokenProvider tokenProvider;
     private AuthenticationService authenticationService;
+    private WhitelistMatcher whitelistMatcher;
+    private HttpResponseUtils httpResponseUtils;
+    private UrlMatcher urlMatcher;
+    private RequestMutationUtils requestMutationUtils;
 
     @BeforeEach
     void setUp() {
@@ -42,7 +51,11 @@ class AuthenticationFilterTest {
         tokenProvider = mock(TokenProvider.class);
         authenticationService = mock(AuthenticationService.class);
         filterChain = mock(GatewayFilterChain.class);
-        filter = new AuthenticationFilter(authenticationService, tokenProvider);
+        whitelistMatcher = mock(WhitelistMatcher.class);
+        httpResponseUtils = new HttpResponseUtils();
+        urlMatcher = new UrlMatcher();
+        requestMutationUtils = new RequestMutationUtils();
+        filter = new AuthenticationFilter(authenticationService, tokenProvider, whitelistMatcher,httpResponseUtils, urlMatcher, requestMutationUtils);
     }
 
     @Test
@@ -53,6 +66,7 @@ class AuthenticationFilterTest {
         );
 
         when(filterChain.filter(exchange)).thenReturn(Mono.empty());
+        when(whitelistMatcher.isWhitelisted(any(ServerHttpRequest.class))).thenReturn(true);
 
         StepVerifier.create(filter.filter(exchange, filterChain))
                 .verifyComplete();
@@ -66,6 +80,8 @@ class AuthenticationFilterTest {
         ServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/secure").build()
         );
+
+        when(tokenProvider.resolveToken(any(ServerHttpRequest.class))).thenReturn(" ");
 
         StepVerifier.create(filter.filter(exchange, filterChain))
                 .then(() -> {
@@ -85,6 +101,7 @@ class AuthenticationFilterTest {
         );
 
         when(redisTokenRepository.isBlackList(anyString())).thenReturn(Mono.just(false));
+        when(tokenProvider.resolveToken(any(ServerHttpRequest.class))).thenReturn(" ");
 
         StepVerifier.create(filter.filter(exchange, filterChain))
                 .then(() -> {
@@ -102,7 +119,7 @@ class AuthenticationFilterTest {
 
         ServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/api/v1/products") // 화이트리스트가 아닌 URL
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + VALID_TOKEN)
+                        .header(HttpHeaders.AUTHORIZATION, BEARER + VALID_TOKEN)
                         .build()
         );
 
