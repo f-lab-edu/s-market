@@ -46,6 +46,30 @@ class RedisTokenRepositoryTest {
                 .expectNext(VALUE)
                 .verifyComplete();
     }
+    @Test
+    @DisplayName("인증 및 리프레시 토큰 삭제 성공")
+    void 인증_및_리프레시_토큰_삭제_성공() {
+        String email = "test@example.com";
+        String refreshTokenKey = "refresh_token:" + email;
+
+        // given
+        redisTokenRepository.saveAuthToken(AUTH_TOKEN_KEY, VALUE, Duration.ofMinutes(10)).block();
+        redisTokenRepository.saveAuthToken(refreshTokenKey, "refresh-token", Duration.ofMinutes(10)).block();
+
+        // when & then
+        StepVerifier.create(redisTokenRepository.removeAuthToken(TOKEN, email))
+                .expectNext(true)
+                .verifyComplete();
+
+        StepVerifier.create(redisTemplate.opsForValue().get(AUTH_TOKEN_KEY))
+                .expectNextCount(0)
+                .verifyComplete();
+
+        StepVerifier.create(redisTemplate.opsForValue().get(refreshTokenKey))
+                .expectNextCount(0)
+                .verifyComplete();
+    }
+
 
     @AfterEach
     void tearDown() {
