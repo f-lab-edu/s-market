@@ -29,7 +29,11 @@ public class RedisTokenRepository {
         return redisTemplate.opsForValue().set(key, value, duration);
     }
 
-    public Mono<Boolean> removeAuthToken(final String key) {
-        return redisTemplate.opsForValue().delete(AUTH_TOKEN_PREFIX + key);
+    public Mono<Boolean> removeAuthToken(final String token, final String email) {
+        Mono<Boolean> deleteRefresh = redisTemplate.opsForValue().delete(REFRESH_TOKEN_KEY + email);
+        Mono<Boolean> deleteAccess = redisTemplate.opsForValue().delete(AUTH_TOKEN_PREFIX + token);
+
+        return Mono.zip(deleteRefresh, deleteAccess)
+                .map(tuple -> tuple.getT1() && tuple.getT2()); // 둘 다 삭제되어야 true
     }
 }
