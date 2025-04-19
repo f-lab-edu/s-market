@@ -10,6 +10,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("NonAsciiCharacters")
 class WhitelistMatcherTest {
 
+    private final WhitelistMatcher whitelistMatcher;
+
+    WhitelistMatcherTest() {
+        whitelistMatcher = new WhitelistMatcher();
+    }
+
     @Test
     @DisplayName("POST /api/v1/users 는 화이트리스트에 포함됨")
     void 화이트리스트_포함_유저생성() {
@@ -17,7 +23,7 @@ class WhitelistMatcherTest {
                 .post("/api/v1/users")
                 .build();
 
-        assertThat(WhitelistMatcher.isWhitelisted(request)).isTrue();
+        assertThat(whitelistMatcher.isWhitelisted(request)).isTrue();
     }
 
     @Test
@@ -27,7 +33,7 @@ class WhitelistMatcherTest {
                 .post("/api/v1/auth/login")
                 .build();
 
-        assertThat(WhitelistMatcher.isWhitelisted(request)).isTrue();
+        assertThat(whitelistMatcher.isWhitelisted(request)).isTrue();
     }
 
     @Test
@@ -37,7 +43,7 @@ class WhitelistMatcherTest {
                 .get("/api/v1/users")
                 .build();
 
-        assertThat(WhitelistMatcher.isWhitelisted(request)).isFalse();
+        assertThat(whitelistMatcher.isWhitelisted(request)).isFalse();
     }
 
     @Test
@@ -47,6 +53,6 @@ class WhitelistMatcherTest {
                 .post("/api/v1/products")
                 .build();
 
-        assertThat(WhitelistMatcher.isWhitelisted(request)).isFalse();
+        assertThat(whitelistMatcher.isWhitelisted(request)).isFalse();
     }
 }
