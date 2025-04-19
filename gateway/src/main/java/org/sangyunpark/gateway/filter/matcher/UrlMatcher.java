@@ -5,14 +5,14 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UrlMatcher {
-    private static final String ADMIN = "admin";
-    private static final String LOGOUT_URL = "/api/v1/auth/logout";
+    private final String ADMIN = "admin";
+    private final String LOGOUT_URL = "/api/v1/auth/logout";
 
-    public static boolean isAdminUrl(ServerHttpRequest request) {
+    public boolean isAdminUrl(ServerHttpRequest request) {
         return request.getURI().getPath().contains(ADMIN);
     }
 
-    public static boolean isLogOutUrl(ServerHttpRequest request) {
+    public boolean isLogOutUrl(ServerHttpRequest request) {
         return request.getURI().getPath().contains(LOGOUT_URL);
     }
 }
