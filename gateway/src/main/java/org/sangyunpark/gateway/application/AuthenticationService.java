@@ -15,16 +15,17 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class AuthenticationService {
 
-    private static final String AUTH_TOKEN_KEY = "auth_token:";
-    private static final String USER_TYPE = "userType";
-    private static final String USER_STATUS = "userStatus";
+    private final String AUTH_TOKEN_KEY = "auth_token:";
+    private final String USER_TYPE = "userType";
+    private final String USER_STATUS = "userStatus";
 
     private final TokenProvider tokenProvider;
     private final RedisTokenRepository redisTokenRepository;
     private final ObjectMapper objectMapper;
 
     public Mono<Void> logout(final String token) {
-        return checkBlackList(token, redisTokenRepository.removeAuthToken(token).then());
+        final String email = tokenProvider.parseClaims(token).getSubject();
+        return checkBlackList(token, redisTokenRepository.removeAuthToken(token,email).then());
     }
 
     public Mono<CachedUser> getAuthenticatedUser(final String token) {
