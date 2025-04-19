@@ -11,8 +11,9 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class RedisTokenRepository {
 
-    private static final String BLACKLIST_KEY = "black_list:";
-    private static final String AUTH_TOKEN_PREFIX = "auth_token:";
+    private final String BLACKLIST_KEY = "black_list:";
+    private final String AUTH_TOKEN_PREFIX = "auth_token:";
+    private final String REFRESH_TOKEN_KEY = "refresh_token:";
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
