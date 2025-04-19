@@ -10,12 +10,12 @@ import java.util.List;
 @Component
 public class WhitelistMatcher {
 
-    private static final List<WhiteListVo> WHITELIST = List.of(
+    private final List<WhiteListVo> WHITELIST = List.of(
             new WhiteListVo(HttpMethod.POST, "/api/v1/users"),
             new WhiteListVo(HttpMethod.POST, "/api/v1/auth/login")
     );
 
-    public static boolean isWhitelisted(ServerHttpRequest request) {
+    public boolean isWhitelisted(ServerHttpRequest request) {
         final HttpMethod method = request.getMethod();
         final String path = request.getURI().getPath();
 
