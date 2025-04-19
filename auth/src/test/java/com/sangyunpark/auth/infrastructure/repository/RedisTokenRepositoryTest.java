@@ -14,10 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class RedisTokenRepositoryTest {
 
-    private static final String EMAIL = "test@example.com";
-    private static final String REFRESH_TOKEN = "refreshToken123";
-    private static final String TEST_ACCESS_TOKEN = "test-access-token";
-    private static final long REMAINING_TIME = 500L;
+    private final String EMAIL = "test@example.com";
+    private final String REFRESH_TOKEN = "refreshToken123";
+    private final String TEST_ACCESS_TOKEN = "test-access-token";
+    private final String BLACKLIST_KEY = "black_list:";
+    private final long REMAINING_TIME = 500L;
 
     @Autowired
     private RedisTokenRepository redisTokenRepository;
@@ -48,7 +49,7 @@ class RedisTokenRepositoryTest {
         redisTokenRepository.saveLogOutToken(TEST_ACCESS_TOKEN, REMAINING_TIME);
 
         // then
-        assertThat(redisTokenRepository.exists(TEST_ACCESS_TOKEN)).isTrue();
+        assertThat(redisTokenRepository.exists(BLACKLIST_KEY + TEST_ACCESS_TOKEN)).isTrue();
     }
 
     @Test
