@@ -10,7 +10,8 @@ import java.util.concurrent.TimeUnit;
 @Repository
 public class RedisTokenRepository {
 
-    private static final String BLACK_LIST_KEY = "black_list:";
+    private final String BLACK_LIST_KEY = "black_list:";
+    private final String REFRESH_TOKEN_KEY = "refresh_token:";
 
     private final StringRedisTemplate redisTemplate;
     private final long refreshTokenExpireTime;
@@ -21,11 +22,11 @@ public class RedisTokenRepository {
     }
 
     public void save(final String email, final String refreshToken) {
-        redisTemplate.opsForValue().set(email, refreshToken, refreshTokenExpireTime, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForValue().set(REFRESH_TOKEN_KEY + email, refreshToken, refreshTokenExpireTime, TimeUnit.MILLISECONDS);
     }
 
     public Optional<String> findByEmail(final String email) {
-        return Optional.ofNullable(redisTemplate.opsForValue().get(email));
+        return Optional.ofNullable(redisTemplate.opsForValue().get(REFRESH_TOKEN_KEY + email));
     }
 
     public void delete(final String email) {
