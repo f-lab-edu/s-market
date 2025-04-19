@@ -14,25 +14,36 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class RequestMutationUtilsTest {
+
+    private final RequestMutationUtils requestMutationUtils = new RequestMutationUtils();
+    private final String EMAIL = "user@example.com";
+    private final String USER_TYPE = "userType";
+    private final String USER_STATUS = "userStatus";
+    private final String NORMAL = "NORMAL";
+    private final String ACTIVE = "ACTIVE";
+
+    private final String URL = "/api/v1/resource";
+
     @Test
     @DisplayName("Claims 정보를 헤더에 추가하여 요청을 변경한다")
     void mutateRequestWithClaims_addsHeaders() {
         // given
         Claims claims = mock(Claims.class);
-        when(claims.getSubject()).thenReturn("user@example.com");
-        when(claims.get("userType", String.class)).thenReturn("NORMAL");
-        when(claims.get("userStatus", String.class)).thenReturn("ACTIVE");
+        when(claims.getSubject()).thenReturn(EMAIL);
+        when(claims.get(USER_TYPE, String.class)).thenReturn(NORMAL);
+        when(claims.get(USER_STATUS, String.class)).thenReturn(ACTIVE);
 
-        MockServerHttpRequest request = MockServerHttpRequest.get("/api/v1/resource").build();
+        MockServerHttpRequest request = MockServerHttpRequest.get(URL).build();
         ServerWebExchange exchange = MockServerWebExchange.from(request);
 
         // when
-        ServerWebExchange mutatedExchange = RequestMutationUtils.mutateRequestWithClaims(exchange, new CachedUser("user@example.com", "NORMAL", "ACTIVE"));
+        ServerWebExchange mutatedExchange = requestMutationUtils.mutateRequestWithClaims(exchange, new CachedUser(EMAIL, NORMAL, ACTIVE));
+
         ServerHttpRequest mutatedRequest = mutatedExchange.getRequest();
 
         // then
-        assertThat(mutatedRequest.getHeaders().getFirst(RequestMutationUtils.X_USER_EMAIL)).isEqualTo("user@example.com");
-        assertThat(mutatedRequest.getHeaders().getFirst(RequestMutationUtils.X_USER_TYPE)).isEqualTo("NORMAL");
-        assertThat(mutatedRequest.getHeaders().getFirst(RequestMutationUtils.X_USER_STATUS)).isEqualTo("ACTIVE");
+        assertThat(mutatedRequest.getHeaders().getFirst(requestMutationUtils.X_USER_EMAIL)).isEqualTo(EMAIL);
+        assertThat(mutatedRequest.getHeaders().getFirst(requestMutationUtils.X_USER_TYPE)).isEqualTo(NORMAL);
+        assertThat(mutatedRequest.getHeaders().getFirst(requestMutationUtils.X_USER_STATUS)).isEqualTo(ACTIVE);
     }
 }
