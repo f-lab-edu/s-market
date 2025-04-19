@@ -19,6 +19,7 @@ import java.time.Duration;
 
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("NonAsciiCharacters")
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
