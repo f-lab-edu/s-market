@@ -16,6 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class HttpResponseUtilsTest {
 
+    private final HttpResponseUtils httpResponseUtils = new HttpResponseUtils();
+
     @Test
     @DisplayName("401 Unauthorized 응답이 생성된다")
     void unauthorizedResponseTest() {
@@ -25,7 +27,7 @@ class HttpResponseUtilsTest {
         );
 
         // when
-        StepVerifier.create(HttpResponseUtils.unauthorized(exchange, ErrorCode.INVALID_TOKEN))
+        StepVerifier.create(httpResponseUtils.unauthorized(exchange, ErrorCode.INVALID_TOKEN))
                 .verifyComplete();
 
         // then
