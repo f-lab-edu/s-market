@@ -11,6 +11,7 @@ import reactor.test.StepVerifier;
 
 import java.time.Duration;
 
+@SuppressWarnings("NonAsciiCharacters")
 @Import(RedisTokenRepository.class)
 @DataRedisTest
 class RedisTokenRepositoryTest {
