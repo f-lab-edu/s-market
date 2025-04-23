@@ -26,7 +26,7 @@ public class CategoryService {
     }
 
     public CategoryResponseDto findCategoryDtoById(final Long id) {
-        Category category = categoryJpaRepository.findById(id).orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
+        final Category category = categoryJpaRepository.findById(id).orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
         return categoryMapper.toDto(category);
     }
 
@@ -57,7 +57,7 @@ public class CategoryService {
 
     @Transactional
     public void deleteCategory(final Long id) {
-        Category category = categoryJpaRepository.findById(id).orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
+        final Category category = categoryJpaRepository.findById(id).orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND));
         category.getChildren().clear();
         categoryJpaRepository.delete(category);
     }
