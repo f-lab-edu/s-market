@@ -77,10 +77,6 @@ public class TokenProvider {
         return parseClaims(token).get(USER_TYPE, String.class);
     }
 
-    public String getUserStatus(final String token) {
-        return parseClaims(token).get(USER_STATUS, String.class);
-    }
-
     public long getRemainingExpiration(final String accessToken) {
         Date expiration = parseClaims(accessToken).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();

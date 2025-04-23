@@ -9,7 +9,6 @@ import com.sangyunpark.auth.domain.vo.Token;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
 import com.sangyunpark.auth.jwt.TokenProvider;
-import com.sangyunpark.auth.jwt.UserPrincipal;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
 import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +32,10 @@ public class AuthService {
         return new TokenResponseDto(token);
     }
 
-    public TokenResponseDto reissue(final String refreshToken, final UserPrincipal userPrincipal) {
-        final String email = userPrincipal.getEmail();
+    public TokenResponseDto reissue(final String refreshToken, final String email, final String userType, final String userStatus) {
         tokenProvider.validateToken(refreshToken);
         validateStoredRefreshToken(email, refreshToken);
-        Token newToken = generateAndStoreToken(email, userPrincipal.getUserType(), userPrincipal.getUserStatus());
+        Token newToken = generateAndStoreToken(email, UserType.valueOf(userType), UserStatus.valueOf(userStatus));
         return new TokenResponseDto(newToken);
     }
 
