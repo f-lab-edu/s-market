@@ -9,7 +9,6 @@ import com.sangyunpark.auth.constants.enums.UserType;
 import com.sangyunpark.auth.exception.BusinessException;
 import com.sangyunpark.auth.infrastructure.repository.RedisTokenRepository;
 import com.sangyunpark.auth.jwt.TokenProvider;
-import com.sangyunpark.auth.jwt.UserPrincipal;
 import com.sangyunpark.auth.presentation.dto.request.LoginRequestDto;
 import com.sangyunpark.auth.presentation.dto.response.TokenResponseDto;
 import org.junit.jupiter.api.BeforeEach;
@@ -103,10 +102,12 @@ class AuthServiceTest {
                 1L     // refresh = 1ms
         );
 
-        String expiredRefreshToken = shortLivedProvider.createRefreshToken("test@example.com", UserType.NORMAL, UserStatus.ACTIVE);
+        final String email = "test@example.com";
+
+        String expiredRefreshToken = shortLivedProvider.createRefreshToken(email, UserType.NORMAL, UserStatus.ACTIVE);
 
         // when & then
-        assertThatThrownBy(() -> authService.reissue(expiredRefreshToken, new UserPrincipal("test@example.com", UserType.NORMAL.name(), UserStatus.ACTIVE.name())))
+        assertThatThrownBy(() -> authService.reissue(expiredRefreshToken, email, UserType.NORMAL.name(), UserStatus.ACTIVE.name()))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_TOKEN);
@@ -117,12 +118,10 @@ class AuthServiceTest {
     void 저장되지_않은_refreshToken_실패() {
         // given
         String email = "abc@example.com";
-        UserPrincipal principal = new UserPrincipal(email, "NORMAL", "ACTIVE");
-
         String refreshToken = tokenProvider.createRefreshToken(email, UserType.NORMAL, UserStatus.ACTIVE);
 
         // when & then
-        assertThatThrownBy(() -> authService.reissue(refreshToken, principal))
+        assertThatThrownBy(() -> authService.reissue(refreshToken, email, UserType.NORMAL.name(), UserStatus.ACTIVE.name()))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.INVALID_TOKEN);
