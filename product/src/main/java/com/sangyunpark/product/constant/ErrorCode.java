@@ -13,7 +13,9 @@ public enum ErrorCode {
     INVALID_REQUEST("INVALID_REQUEST", HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_FOUND("PRODUCT_NOT_FOUND", HttpStatus.NOT_FOUND),
 
-    STOCK_NOT_ENOUGH("STOCK_NOT_ENOUGH", HttpStatus.BAD_REQUEST);
+    STOCK_NOT_ENOUGH("STOCK_NOT_ENOUGH", HttpStatus.BAD_REQUEST),
+
+    KAFKA_PRODUCER_ERROR("KAFKA_PRODUCER_ERROR", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
     private final HttpStatus status;
