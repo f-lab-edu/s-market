@@ -5,6 +5,7 @@ import com.sangyunpark.product.domain.entity.Category;
 import com.sangyunpark.product.domain.entity.Product;
 import com.sangyunpark.product.domain.mapper.ProductMapper;
 import com.sangyunpark.product.exception.BusinessException;
+import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.ProductJpaRepository;
 import com.sangyunpark.product.infrastructure.repository.ProductQueryRepository;
 import com.sangyunpark.product.infrastructure.repository.condition.ProductFilterCondition;
@@ -28,6 +29,7 @@ public class ProductService {
 
     private final ProductJpaRepository productJpaRepository;
     private final ProductQueryRepository productQueryRepository;
+    private final StockRedisRepository stockRedisRepository;
     private final CategoryService categoryService;
     private final ProductMapper productMapper;
 
@@ -36,14 +38,14 @@ public class ProductService {
     }
 
     public ProductCursorResponseDto<ProductDto> getPagedProducts(final ProductCursorRequestDto request) {
-        LocalDateTime now = LocalDateTime.now();
-        List<ProductDto> content = productQueryRepository.findByCursor(request.cursor(), request.lastId(), request.size(), now);
+        final LocalDateTime now = LocalDateTime.now();
+        final List<ProductDto> content = productQueryRepository.findByCursor(request.cursor(), request.lastId(), request.size(), now);
 
         if(content.isEmpty()) {
             return new ProductCursorResponseDto<>(content, null, null);
         }
 
-        ProductDto last = content.get(content.size() - 1);
+        final ProductDto last = content.get(content.size() - 1);
         return new ProductCursorResponseDto<>(content, last.createdAt() ,last.id());
     }
 
@@ -59,9 +61,9 @@ public class ProductService {
 
     @Transactional
     public void update(final Long id, final ProductRequestDto dto) {
-        Product product = productJpaRepository.findById(id)
+        final Product product = productJpaRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-        Category category = categoryService.findCategoryById(dto.categoryId());
+        final Category category = categoryService.findCategoryById(dto.categoryId());
         product.update(dto, category);
     }
 
