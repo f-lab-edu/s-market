@@ -9,8 +9,8 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/auth" />
-            <option value="$PROJECT_DIR$/product" />
             <option value="$PROJECT_DIR$/gateway" />
+            <option value="$PROJECT_DIR$/product" />
             <option value="$PROJECT_DIR$/user" />
           </set>
         </option>
@@ -19,7 +19,11 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$/Product" />
         <option name="modules">
           <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/auth" />
+            <option value="$PROJECT_DIR$/gateway" />
             <option value="$PROJECT_DIR$/product" />
+            <option value="$PROJECT_DIR$/user" />
           </set>
         </option>
       </GradleProjectSettings>
@@ -30,6 +34,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/auth" />
             <option value="$PROJECT_DIR$/gateway" />
+            <option value="$PROJECT_DIR$/product" />
             <option value="$PROJECT_DIR$/user" />
           </set>
         </option>
@@ -65,6 +70,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/auth" />
             <option value="$PROJECT_DIR$/gateway" />
+            <option value="$PROJECT_DIR$/product" />
             <option value="$PROJECT_DIR$/user" />
           </set>
         </option>
