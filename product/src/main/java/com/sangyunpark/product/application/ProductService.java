@@ -29,7 +29,6 @@ public class ProductService {
 
     private final ProductJpaRepository productJpaRepository;
     private final ProductQueryRepository productQueryRepository;
-    private final StockRedisRepository stockRedisRepository;
     private final CategoryService categoryService;
     private final ProductMapper productMapper;
 
