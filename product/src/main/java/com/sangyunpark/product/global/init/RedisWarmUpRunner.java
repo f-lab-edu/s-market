@@ -21,7 +21,7 @@ public class RedisWarmUpRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        List<Stock> stocks = stockJpaRepository.findAll();
+        final List<Stock> stocks = stockJpaRepository.findAll();
         if(stocks.isEmpty()) return;
         stringRedisTemplate.executePipelined((RedisCallback<Object>) connection -> {
             for (Stock stock : stocks) {
