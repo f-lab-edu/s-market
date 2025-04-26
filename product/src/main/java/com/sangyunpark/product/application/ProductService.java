@@ -5,7 +5,6 @@ import com.sangyunpark.product.domain.entity.Category;
 import com.sangyunpark.product.domain.entity.Product;
 import com.sangyunpark.product.domain.mapper.ProductMapper;
 import com.sangyunpark.product.exception.BusinessException;
-import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.ProductJpaRepository;
 import com.sangyunpark.product.infrastructure.repository.ProductQueryRepository;
 import com.sangyunpark.product.infrastructure.repository.condition.ProductFilterCondition;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,13 +39,13 @@ public class ProductService {
     public ProductCursorResponseDto<ProductDto> getPagedProducts(final ProductCursorRequestDto request) {
         final LocalDateTime now = LocalDateTime.now();
         final List<ProductDto> content = productQueryRepository.findByCursor(request.cursor(), request.lastId(), request.size(), now);
-
-        if(content.isEmpty()) {
-            return new ProductCursorResponseDto<>(content, null, null);
-        }
-
-        final ProductDto last = content.get(content.size() - 1);
-        return new ProductCursorResponseDto<>(content, last.createdAt() ,last.id());
+        return Optional.of(content)
+                .filter(list -> !list.isEmpty())
+                .map(list -> {
+                    ProductDto last = list.get(list.size() - 1);
+                    return new ProductCursorResponseDto<>(content, last.createdAt(), last.id());
+                })
+                .orElseGet(() -> new ProductCursorResponseDto<>(content,null,null));
     }
 
     public Page<ProductDto> getFilteredProducts(final ProductFilterCondition condition, final Pageable pageable) {
