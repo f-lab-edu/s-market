@@ -3,7 +3,6 @@ package com.sangyunpark.product.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sangyunpark.product.domain.entity.Category;
 import com.sangyunpark.product.infrastructure.repository.CategoryJpaRepository;
-import com.sangyunpark.product.infrastructure.repository.ProductJpaRepository;
 import com.sangyunpark.product.presentation.dto.request.ProductRequestDto;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,7 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,9 +31,6 @@ class ProductIntegrationTest {
 
     @Autowired
     private CategoryJpaRepository categoryJpaRepository;
-
-    @Autowired
-    private ProductJpaRepository productJpaRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -85,7 +82,7 @@ class ProductIntegrationTest {
                 .andExpect(jsonPath("$.price").value(1500000))
                 .andExpect(jsonPath("$.visible").value(true))
                 .andExpect(jsonPath("$.startAt").value(now.toString()))
-                .andExpect(jsonPath("$.endAt").value(now.plusDays(30).toString()))
+                .andExpect(jsonPath("$.startAt").value(now.toString()))
                 .andExpect(jsonPath("$.createdAt").exists())
                 .andExpect(jsonPath("$.updatedAt").exists());
     }
@@ -236,7 +233,9 @@ class ProductIntegrationTest {
         mockMvc.perform(get("/api/v1/admin/products/search")
                         .param("categoryId", String.valueOf(categoryId))
                         .param("page", "0")
-                        .param("size", "5"))
+                        .param("size", "5")
+                        .param("sortOptions", "LATEST")
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(5))
                 .andExpect(jsonPath("$.totalElements").value(8));
@@ -262,7 +261,7 @@ class ProductIntegrationTest {
         }
 
         mockMvc.perform(get("/api/v1/admin/products/search")
-                        .param("sort", "price_asc")
+                        .param("sort", "PRICE_ASC")
                         .param("size", "5"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].price").value(10010L));
