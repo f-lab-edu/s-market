@@ -13,19 +13,21 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static com.sangyunpark.product.constant.ErrorCode.CATEGORY_NOT_FOUND;
+import static com.sangyunpark.product.constant.ErrorCode.CATEGORY_SELF_PARENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings("NonAsciiCharacters")
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
+
+    @InjectMocks
+    private CategoryService categoryService;
 
     @Mock
     private CategoryJpaRepository categoryJpaRepository;
@@ -33,83 +35,118 @@ class CategoryServiceTest {
     @Mock
     private CategoryMapper categoryMapper;
 
-    @InjectMocks
-    private CategoryService categoryService;
-
     @Test
-    @DisplayName("카테고리 전체 조회")
-    void 카테고리_전체_조회() {
-        List<Category> categories = Arrays.asList(new Category(), new Category());
-        List<CategoryResponseDto> responseDtos = Arrays.asList(mock(CategoryResponseDto.class), mock(CategoryResponseDto.class));
-
+    @DisplayName("카테고리 전체 조회 성공")
+    void 카테고리_전체_조회_성공() {
+        // given
+        List<Category> categories = List.of(mock(Category.class));
         when(categoryJpaRepository.findAll()).thenReturn(categories);
-        when(categoryMapper.toDtoList(categories)).thenReturn(responseDtos);
+        when(categoryMapper.toDtoList(categories)).thenReturn(List.of(mock(CategoryResponseDto.class)));
 
+        // when
         List<CategoryResponseDto> result = categoryService.findAllCategories();
-        assertThat(result).hasSize(2);
+
+        // then
+        assertThat(result).hasSize(1);
         verify(categoryJpaRepository).findAll();
     }
 
     @Test
-    @DisplayName("ID로 카테고리 조회 성공")
-    void ID로_카테고리_조회_성공() {
-        Category category = new Category();
+    @DisplayName("카테고리 단건 조회 성공")
+    void 카테고리_단건_조회_성공() {
+        // given
+        Long id = 1L;
+        Category category = mock(Category.class);
         CategoryResponseDto responseDto = mock(CategoryResponseDto.class);
 
-        when(categoryJpaRepository.findById(1L)).thenReturn(Optional.of(category));
+        when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
         when(categoryMapper.toDto(category)).thenReturn(responseDto);
 
-        CategoryResponseDto result = categoryService.findCategoryDtoById(1L);
+        // when
+        CategoryResponseDto result = categoryService.findCategoryDtoById(id);
+
+        // then
         assertThat(result).isEqualTo(responseDto);
+        verify(categoryJpaRepository).findById(id);
     }
 
     @Test
-    @DisplayName("ID로 카테고리 조회 실패")
-    void ID로_카테고리_조회_실패() {
-        when(categoryJpaRepository.findById(1L)).thenReturn(Optional.empty());
+    @DisplayName("카테고리 조회 실패 - 존재하지 않음")
+    void 카테고리_조회_실패() {
+        // given
+        Long id = 1L;
+        when(categoryJpaRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> categoryService.findCategoryDtoById(1L))
+        // when, then
+        assertThatThrownBy(() -> categoryService.findCategoryById(id))
                 .isInstanceOf(BusinessException.class)
-                .extracting("errorCode").isEqualTo(CATEGORY_NOT_FOUND);
+                .hasFieldOrPropertyWithValue("errorCode", CATEGORY_NOT_FOUND);
     }
 
     @Test
     @DisplayName("카테고리 생성 성공")
     void 카테고리_생성_성공() {
-        CategoryRequestDto dto = mock(CategoryRequestDto.class);
-        when(dto.parentId()).thenReturn(10L);
-        Category parent = new Category();
-        Category toSave = mock(Category.class);
-        when(categoryJpaRepository.findById(10L)).thenReturn(Optional.of(parent));
-        when(categoryMapper.toEntity(dto, parent)).thenReturn(toSave);
-        when(categoryJpaRepository.save(toSave)).thenReturn(toSave);
-        when(toSave.getId()).thenReturn(100L);
+        // given
+        CategoryRequestDto dto = new CategoryRequestDto("전자제품", null);
+        Category newCategory = Category.builder().name(dto.name()).depth(0).build();
 
-        Long result = categoryService.createCategory(dto);
-        assertThat(result).isEqualTo(100L);
+        when(categoryJpaRepository.save(any(Category.class))).thenReturn(newCategory);
+
+        // when
+        Long id = categoryService.createCategory(dto);
+
+        // then
+        assertThat(id).isEqualTo(newCategory.getId());
+        verify(categoryJpaRepository).save(any(Category.class));
     }
 
     @Test
-    @DisplayName("카테고리 수정 성공")
-    void 카테고리_수정_성공() {
-        CategoryRequestDto dto = mock(CategoryRequestDto.class);
-        Category category = mock(Category.class);
-        when(categoryJpaRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(dto.parentId()).thenReturn(null);
+    @DisplayName("카테고리 수정 성공 - 이름 변경")
+    void 카테고리_수정_성공_이름변경() {
+        // given
+        Long id = 1L;
+        CategoryRequestDto dto = new CategoryRequestDto("새로운이름", null);
+        Category category = Category.builder().id(id).name("기존이름").depth(0).build();
 
-        categoryService.updateCategory(1L, dto);
-        verify(category).update(dto, null);
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
+
+        // when
+        categoryService.updateCategory(id, dto);
+
+        // then
+        assertThat(category.getName()).isEqualTo("새로운이름");
+        verify(categoryJpaRepository).findWithChildrenById(id);
+    }
+
+    @Test
+    @DisplayName("카테고리 수정 실패 - 순환 참조 발생")
+    void 카테고리_수정_실패_순환참조() {
+        // given
+        Long id = 1L;
+        CategoryRequestDto dto = new CategoryRequestDto("새이름", id); // 자기 자신을 부모로 설정
+        Category category = Category.builder().id(id).name("기존이름").depth(0).build();
+
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
+        when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
+
+        // when, then
+        assertThatThrownBy(() -> categoryService.updateCategory(id, dto))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", CATEGORY_SELF_PARENT);
     }
 
     @Test
     @DisplayName("카테고리 삭제 성공")
     void 카테고리_삭제_성공() {
+        // given
+        Long id = 1L;
         Category category = mock(Category.class);
-        when(categoryJpaRepository.findById(1L)).thenReturn(Optional.of(category));
-        when(category.getChildren()).thenReturn(Collections.emptyList());
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
 
-        categoryService.deleteCategory(1L);
+        // when
+        categoryService.deleteCategory(id);
 
+        // then
         verify(category).getChildren();
         verify(categoryJpaRepository).delete(category);
     }
