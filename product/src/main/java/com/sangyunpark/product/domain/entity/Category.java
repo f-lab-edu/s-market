@@ -1,8 +1,5 @@
 package com.sangyunpark.product.domain.entity;
 
-import com.sangyunpark.product.constant.ErrorCode;
-import com.sangyunpark.product.exception.BusinessException;
-import com.sangyunpark.product.presentation.dto.request.CategoryRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,11 +31,13 @@ public class Category {
     @Builder.Default
     private List<Category> children = new ArrayList<>();
 
-    public void update(final CategoryRequestDto dto, final Category parent) {
-        if (this.equals(parent) || hasCircularReference(parent)) {
-            throw new BusinessException(ErrorCode.CATEGORY_SELF_PARENT);
-        }
-        this.name = dto.name();
+    private int depth;
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void updateParent(Category parent) {
         this.parent = parent;
     }
 
