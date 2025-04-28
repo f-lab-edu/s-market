@@ -64,7 +64,7 @@ class ProductServiceTest {
         when(productMapper.toDto(product)).thenReturn(responseDto);
 
         // when
-        final ProductResponseDto result = productService.findById(id);
+        final ProductResponseDto result = productService.findProductDtoById(id);
 
         // then
         assertThat(result).isEqualTo(responseDto);
@@ -102,13 +102,28 @@ class ProductServiceTest {
         final Category category = mock(Category.class);
 
         when(productJpaRepository.findById(id)).thenReturn(Optional.of(product));
-        when(categoryService.findCategoryById(dto.categoryId())).thenReturn(category);
+        when(dto.categoryId()).thenReturn(10L);
+        when(categoryService.findCategoryById(10L)).thenReturn(category);
+
+        when(dto.title()).thenReturn("New Title");
+        when(dto.description()).thenReturn("New Description");
+        when(dto.price()).thenReturn(2000L);
+        when(dto.visible()).thenReturn(false);
+        when(dto.startAt()).thenReturn(LocalDateTime.now().plusDays(1));
+        when(dto.endAt()).thenReturn(LocalDateTime.now().plusDays(2));
 
         // when
         productService.update(id, dto);
 
         // then
-        verify(product).update(dto, category);
+        verify(product).updateTitle("New Title");
+        verify(product).updateDescription("New Description");
+        verify(product).updatePrice(2000L);
+        verify(product).updateCategory(category);
+        verify(product).updateVisible(false);
+        verify(product).updateStartAt(dto.startAt());
+        verify(product).updateEndAt(dto.endAt());
+        verify(product).updateUpdatedAt(any(LocalDateTime.class));
     }
 
     @Test
@@ -118,10 +133,7 @@ class ProductServiceTest {
         final Long id = 1L;
         final ProductRequestDto dto = mock(ProductRequestDto.class);
 
-        // when
-        when(productJpaRepository.findById(id)).thenThrow(new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        // then
+        // when, then
         assertThatThrownBy(() -> productService.update(id, dto))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
@@ -133,13 +145,15 @@ class ProductServiceTest {
     void 상품_삭제_성공() {
         // given
         final Long id = 1L;
-        when(productJpaRepository.existsById(id)).thenReturn(true);
+        final Product product = mock(Product.class);
+
+        when(productJpaRepository.findById(id)).thenReturn(Optional.of(product));
 
         // when
         productService.deleteById(id);
 
         // then
-        verify(productJpaRepository).deleteById(id);
+        verify(productJpaRepository).delete(product);
     }
 
     @Test
@@ -147,7 +161,7 @@ class ProductServiceTest {
     void 존재하지_않는_상품_삭제시_실패() {
         // given
         Long id = 999L;
-        when(productJpaRepository.existsById(id)).thenReturn(false);
+        when(productJpaRepository.findById(id)).thenReturn(Optional.empty());
 
         // when, then
         assertThatThrownBy(() -> productService.deleteById(id))
