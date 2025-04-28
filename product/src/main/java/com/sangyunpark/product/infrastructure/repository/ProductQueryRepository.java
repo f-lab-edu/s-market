@@ -1,7 +1,6 @@
 package com.sangyunpark.product.infrastructure.repository;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.sangyunpark.product.domain.entity.QProduct;
 import com.sangyunpark.product.infrastructure.repository.condition.ProductFilterCondition;
 import com.sangyunpark.product.presentation.dto.ProductDto;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import static com.querydsl.core.types.Projections.constructor;
 import static com.sangyunpark.product.domain.entity.QProduct.product;
 import static com.sangyunpark.product.infrastructure.repository.condition.ProductConditionBuilder.buildCursorCondition;
 import static com.sangyunpark.product.infrastructure.repository.condition.ProductConditionBuilder.buildSearchFilter;
-import static com.sangyunpark.product.infrastructure.repository.sort.ProductSortResolver.resolveSort;
 
 @Repository
 @RequiredArgsConstructor
@@ -27,8 +25,6 @@ public class ProductQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     public List<ProductDto> findByCursor(final LocalDateTime cursor, final Long lastId, final int limit, final LocalDateTime now) {
-        QProduct product = QProduct.product;
-
         return queryFactory
                 .select(constructor(ProductDto.class,
                         product.id,
@@ -63,7 +59,7 @@ public class ProductQueryRepository {
                 ))
                 .from(product)
                 .where(buildSearchFilter(condition))
-                .orderBy(resolveSort(condition.sortOption()))
+                .orderBy(condition.sortOption().toOrderSpecifiers())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
