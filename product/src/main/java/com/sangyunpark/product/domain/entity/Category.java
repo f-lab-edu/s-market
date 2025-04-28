@@ -41,18 +41,13 @@ public class Category {
         this.parent = parent;
     }
 
-    private boolean hasCircularReference(final Category newParent) {
-        Category current = newParent;
-        while(current != null) {
-            if(this.equals(current)) return true;
-            current = current.parent;
-        }
-
-        return false;
+    public void updateDepth(int depth) {
+        this.depth = depth;
     }
 
-    public void addChild(final Category child) {
+    public void addChild(Category child) {
         children.add(child);
         child.parent = this;
+        child.depth = this.depth + 1;
     }
 }
