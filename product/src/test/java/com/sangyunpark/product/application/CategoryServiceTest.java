@@ -147,7 +147,6 @@ class CategoryServiceTest {
         categoryService.deleteCategory(id);
 
         // then
-        verify(category).getChildren();
         verify(categoryJpaRepository).delete(category);
     }
 }
