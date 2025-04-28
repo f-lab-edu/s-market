@@ -32,7 +32,7 @@ public class ProductController {
     public ProductCursorResponseDto<ProductDto> getPagedProducts(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) final LocalDateTime cursor,
             @RequestParam(required = false) final Long lastId,
-            @RequestParam(defaultValue = "20") final int size
+            @RequestParam(defaultValue = "10") final int size
     ) {
         ProductCursorRequestDto request = new ProductCursorRequestDto(cursor, lastId, size);
         return productService.getPagedProducts(request);
@@ -47,20 +47,20 @@ public class ProductController {
             @RequestParam(required = false) final String sort,
             final Pageable pageable
     ) {
-        SortOption sortOption = SortOption.from(sort);
+
         ProductFilterCondition condition = new ProductFilterCondition(
                 categoryId,
                 minPrice,
                 maxPrice,
                 keyword,
-                sortOption
+                SortOption.from(sort)
         );
         return productService.getFilteredProducts(condition, pageable);
     }
 
     @GetMapping("/{id}")
     public ProductResponseDto findById(@PathVariable final Long id) {
-        return productService.findById(id);
+        return productService.findProductDtoById(id);
     }
 
     @PutMapping("/{id}")
