@@ -20,8 +20,8 @@ class CategoryMapperTest {
     @DisplayName("Category → CategoryResponseDto 매핑 테스트")
     void toDto_매핑_성공() {
         // given
-        Category parent = new Category(1L, "부모", null, null);
-        Category category = new Category(2L, "자식", parent, null);
+        Category parent = new Category(1L, "부모", null, null,0);
+        Category category = new Category(2L, "자식", parent, null,1);
 
         // when
         CategoryResponseDto dto = categoryMapper.toDto(category);
@@ -36,8 +36,8 @@ class CategoryMapperTest {
     @DisplayName("Category 리스트 → CategoryResponseDto 리스트 매핑 테스트")
     void toDtoList_매핑_성공() {
         // given
-        Category category1 = new Category(1L, "카테고리1", null, null);
-        Category category2 = new Category(2L, "카테고리2", null, null);
+        Category category1 = new Category(1L, "카테고리1", null, null,0);
+        Category category2 = new Category(2L, "카테고리2", null, null,0);
 
         // when
         List<CategoryResponseDto> dtoList = categoryMapper.toDtoList(List.of(category1, category2));
