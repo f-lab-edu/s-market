@@ -1,6 +1,5 @@
 package com.sangyunpark.product.domain.entity;
 
-import com.sangyunpark.product.presentation.dto.request.ProductRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -47,14 +46,35 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime endAt;
 
-    public void update(ProductRequestDto dto, Category category) {
+    public void updateCategory(final Category category) {
         this.category = category;
-        this.title = dto.title();
-        this.description = dto.description();
-        this.price = dto.price();
-        this.visible = dto.visible();
-        this.startAt = dto.startAt();
-        this.endAt = dto.endAt();
-        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateTitle(final String title) {
+        this.title = title;
+    }
+
+    public void updateDescription(final String description) {
+        this.description = description;
+    }
+
+    public void updatePrice(final Long price) {
+        this.price = price;
+    }
+
+    public void updateVisible(final Boolean visible) {
+        this.visible = visible;
+    }
+
+    public void updateStartAt(final LocalDateTime startAt) {
+        this.startAt = startAt;
+    }
+
+    public void updateEndAt(final LocalDateTime endAt) {
+        this.endAt = endAt;
+    }
+
+    public void updateUpdatedAt(final LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
