@@ -62,7 +62,7 @@ class ProductControllerTest {
                 LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now()
         );
 
-        when(productService.findById(1L)).thenReturn(responseDto);
+        when(productService.findProductDtoById(1L)).thenReturn(responseDto);
 
         mockMvc.perform(get("/api/v1/admin/products/1"))
                 .andExpect(status().isOk())
