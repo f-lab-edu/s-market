@@ -9,12 +9,14 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.web.servlet.View;
 
 @Slf4j
 @Configuration
 public class    KafkaConsumerConfig {
 
     private final String DLT = ".DLT";
+    private final int MAX_RETRY_COUNT = 5;
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, StockDeductedEvent> kafkaListenerContainerFactory(
@@ -30,11 +32,11 @@ public class    KafkaConsumerConfig {
     }
 
     @Bean
-    public DefaultErrorHandler errorHandler(KafkaTemplate<String, StockDeductedEvent> kafkaTemplate) {
+    public DefaultErrorHandler errorHandler(KafkaTemplate<String, StockDeductedEvent> kafkaTemplate, View error) {
         DeadLetterPublishingRecoverer recover = new DeadLetterPublishingRecoverer(kafkaTemplate,
                 (record, ex) -> new org.apache.kafka.common.TopicPartition(record.topic() + DLT, record.partition()));
 
-        ExponentialBackOffWithJitter backOff = new ExponentialBackOffWithJitter(1000L, 2.0, 16000L);;
+        ExponentialBackOffWithJitter backOff = new ExponentialBackOffWithJitter(1000L, 2.0, 16000L, MAX_RETRY_COUNT);
 
         DefaultErrorHandler errorHandler = new DefaultErrorHandler(recover, backOff);
 

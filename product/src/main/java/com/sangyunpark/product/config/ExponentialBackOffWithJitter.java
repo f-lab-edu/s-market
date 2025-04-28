@@ -8,11 +8,15 @@ public class ExponentialBackOffWithJitter implements BackOff {
 
     private final double multiplier;
     private final long maxElapsedTime;
+    private final int maxAttempts;
+
     private long currentInterval;
+    private int attemptCount;
     private long elapsedTime;
     private final Random random = new Random();
 
-    public ExponentialBackOffWithJitter(long initialInterval, double multiplier, long maxElapsedTime) {
+    public ExponentialBackOffWithJitter(long initialInterval, double multiplier, long maxElapsedTime, int maxAttempts) {
+        this.maxAttempts= maxAttempts;
         this.multiplier = multiplier;
         this.maxElapsedTime = maxElapsedTime;
         this.currentInterval = initialInterval;
@@ -22,7 +26,7 @@ public class ExponentialBackOffWithJitter implements BackOff {
     @Override
     public BackOffExecution start() {
         return () -> {
-            if (elapsedTime >= maxElapsedTime) {
+            if (elapsedTime >= maxElapsedTime || attemptCount >= maxAttempts) {
                 return BackOffExecution.STOP;
             }
 
@@ -32,6 +36,7 @@ public class ExponentialBackOffWithJitter implements BackOff {
             currentInterval = Math.min((long) (currentInterval * multiplier), Long.MAX_VALUE / 2);
 
             elapsedTime += jittered;
+            attemptCount++;
 
             return jittered;
         };
