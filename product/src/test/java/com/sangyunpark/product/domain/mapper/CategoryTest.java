@@ -137,7 +137,7 @@ class CategoryServiceTest {
         Category category = Category.builder().id(id).name("기존이름").depth(0).build();
         CategoryRequestDto dto = new CategoryRequestDto("새이름", null);
 
-        when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
 
         // when
         categoryService.updateCategory(id, dto);
@@ -152,11 +152,19 @@ class CategoryServiceTest {
         // given
         Long id = 1L;
         Long newParentId = 2L;
-        Category category = Category.builder().id(id).name("카테고리").depth(0).build();
-        Category newParent = Category.builder().id(newParentId).name("새부모").depth(0).build();
+        Category category = Category.builder()
+                .id(id)
+                .name("카테고리")
+                .depth(0)
+                .build();
+        Category newParent = Category.builder()
+                .id(newParentId)
+                .name("새부모")
+                .depth(1)
+                .build();
         CategoryRequestDto dto = new CategoryRequestDto("카테고리", newParentId);
 
-        when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
         when(categoryJpaRepository.findById(newParentId)).thenReturn(Optional.of(newParent));
 
         // when
@@ -175,6 +183,7 @@ class CategoryServiceTest {
         Category category = Category.builder().id(id).name("카테고리").depth(0).build();
         CategoryRequestDto dto = new CategoryRequestDto("카테고리", id); // 자기 자신을 부모로 설정
 
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
         when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
 
         // when, then
@@ -189,13 +198,12 @@ class CategoryServiceTest {
         // given
         Long id = 1L;
         Category category = mock(Category.class);
-        when(categoryJpaRepository.findById(id)).thenReturn(Optional.of(category));
+        when(categoryJpaRepository.findWithChildrenById(id)).thenReturn(Optional.of(category));
 
         // when
         categoryService.deleteCategory(id);
 
         // then
-        verify(category).getChildren();
         verify(categoryJpaRepository).delete(category);
     }
 }
