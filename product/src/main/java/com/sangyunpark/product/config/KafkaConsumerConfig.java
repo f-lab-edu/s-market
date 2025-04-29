@@ -10,7 +10,6 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.web.servlet.View;
 
 @Slf4j
 @Configuration
@@ -33,7 +32,7 @@ public class    KafkaConsumerConfig {
     }
 
     @Bean
-    public DefaultErrorHandler errorHandler(KafkaTemplate<String, StockDeductedEvent> kafkaTemplate, View error) {
+    public DefaultErrorHandler errorHandler(KafkaTemplate<String, StockDeductedEvent> kafkaTemplate) {
         DeadLetterPublishingRecoverer recover = new DeadLetterPublishingRecoverer(kafkaTemplate,
                 (record, ex) -> new org.apache.kafka.common.TopicPartition(record.topic() + DLT, record.partition()));
 

@@ -22,7 +22,6 @@ public class StockEventConsumer {
 
     private final StockJpaRepository stockJpaRepository;
     private final OrderDuplicationRepository orderDuplicationRepository;
-    private final StockRedisRepository stockRedisRepository;
 
     @Transactional
     @KafkaListener(topics = TOPIC, groupId = GROUP_ID)
@@ -30,7 +29,6 @@ public class StockEventConsumer {
 
         if(orderDuplicationRepository.isAlreadyProcessed(event.orderId())) {
             log.info("이미 처리된 주문 orderId: {}", event.orderId());
-            stockRedisRepository.increase(event.productId(), event.quantity());
             return;
         }
 
