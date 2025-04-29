@@ -44,7 +44,7 @@ class StockServiceTest {
     void 캐시없음_정상차감() {
         // given
         Long productId = 1L, orderId = 100L, quantity = 2L;
-        given(stockJpaRepository.existsById(productId)).willReturn(false);
+        given(stockRedisRepository.isExisted(productId)).willReturn(false);
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.of(10L));
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(8L);
 
@@ -63,7 +63,7 @@ class StockServiceTest {
     void 캐시있음_정상차감() {
         // given
         Long productId = 2L, orderId = 200L, quantity = 3L;
-        given(stockJpaRepository.existsById(productId)).willReturn(true);
+        given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(7L);
 
         // when
@@ -81,7 +81,7 @@ class StockServiceTest {
     void 재고부족_예외() {
         // given
         Long productId = 3L, orderId = 300L, quantity = 20L;
-        given(stockJpaRepository.existsById(productId)).willReturn(true);
+        given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(-1L);
 
         // expect
@@ -95,7 +95,7 @@ class StockServiceTest {
     void 상품없음_예외() {
         // given
         Long productId = 99L, orderId = 400L, quantity = 1L;
-        given(stockJpaRepository.existsById(productId)).willReturn(false);
+        given(stockRedisRepository.isExisted(productId)).willReturn(false);
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.empty());
 
         // expect
