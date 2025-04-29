@@ -1,5 +1,6 @@
 package com.sangyunpark.product.config;
 
+import com.sangyunpark.product.global.ExponentialBackOffWithJitter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.backoff.BackOffExecution;
