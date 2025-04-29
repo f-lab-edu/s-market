@@ -4,7 +4,6 @@ import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
-import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
