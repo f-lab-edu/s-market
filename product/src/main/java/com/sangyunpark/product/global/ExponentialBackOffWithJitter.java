@@ -1,4 +1,4 @@
-package com.sangyunpark.product.config;
+package com.sangyunpark.product.global;
 
 import java.util.Random;
 import org.springframework.util.backoff.BackOff;
