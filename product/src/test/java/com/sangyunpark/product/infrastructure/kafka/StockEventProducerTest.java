@@ -29,7 +29,7 @@ class StockEventProducerTest {
 
     @BeforeEach
     void setUp() {
-        stockEventProducer = new StockEventProducer(stockRedisRepository,kafkaTemplate);
+        stockEventProducer = new StockEventProducer(kafkaTemplate);
     }
 
     @Test
