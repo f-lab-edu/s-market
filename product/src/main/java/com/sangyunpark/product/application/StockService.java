@@ -23,10 +23,10 @@ public class StockService {
 
     public void decreaseStockAndPublish(final Long productId, final Long quantity, final Long orderId) {
 
-        if(!stockJpaRepository.existsById(productId)) {
+        if(!stockRedisRepository.isExisted(productId)) {
             Long dbQuantity = stockJpaRepository.findQuantityByProductId(productId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-            stockRedisRepository.setIfAbsentWithTTL(productId, dbQuantity, Duration.ofSeconds(30));
+            stockRedisRepository.setIfAbsentWithTTL(productId, dbQuantity, Duration.ofMinutes(3));
         }
 
         final Long remainStock =  stockRedisRepository.decrease(productId, quantity);
