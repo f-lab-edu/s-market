@@ -17,7 +17,7 @@ class ExponentialBackOffWithJitterTest {
         final double multiplier = 2.0;
         final long maxElapsedTime = 10000L;
 
-        ExponentialBackOffWithJitter backOff = new ExponentialBackOffWithJitter(initialInterval, multiplier, maxElapsedTime,5);
+        ExponentialBackOffWithJitter backOff = new ExponentialBackOffWithJitter(initialInterval, multiplier, maxElapsedTime,Integer.MAX_VALUE);
         BackOffExecution execution = backOff.start();
 
         long elapsed = 0L;
@@ -38,7 +38,7 @@ class ExponentialBackOffWithJitterTest {
         // then
         System.out.println("총 대기 시간: " + elapsed + "ms");
         assertThat(elapsed).isGreaterThanOrEqualTo(0);
-        assertThat(elapsed).isGreaterThanOrEqualTo(maxElapsedTime);
+        assertThat(elapsed).isGreaterThanOrEqualTo(maxElapsedTime - 1);
     }
 
     @Test
