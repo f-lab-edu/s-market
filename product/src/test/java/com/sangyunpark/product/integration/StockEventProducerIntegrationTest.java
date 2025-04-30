@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -77,7 +78,7 @@ public class StockEventProducerIntegrationTest {
                 new JsonDeserializer<>(StockDeductedEvent.class, false)
         ).createConsumer();
 
-        consumer.subscribe(java.util.Collections.singletonList(TOPIC));
+        consumer.subscribe(Collections.singletonList(TOPIC));
     }
 
     @Test
