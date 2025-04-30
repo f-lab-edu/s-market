@@ -13,11 +13,11 @@ public class OrderDuplicationRepository {
     private final StringRedisTemplate stringRedisTemplate;
     private final String PREFIX = "stock:deducted:";
 
-    public boolean isAlreadyProcessed(final Long orderId) {
-        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(PREFIX + orderId));
+    private String getKey(final Long orderId) {
+        return PREFIX + orderId;
     }
 
-    public void saveProcessed(final Long orderId) {
-        stringRedisTemplate.opsForValue().set(PREFIX + orderId, "done", Duration.ofMinutes(10));
+    public boolean saveIfAbsent(final Long orderId, final Duration ttl) {
+        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(getKey(orderId), "done", ttl));
     }
 }
