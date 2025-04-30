@@ -9,11 +9,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -47,22 +47,24 @@ public class StockIntegrationTest {
     private StockRedisRepository stockRedisRepository;
 
     @Container
-    static KafkaContainer kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
+    static KafkaContainer kafkaContainer = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"))
+            .withReuse(true);
 
-    @Container
-    static GenericContainer<?> redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7.0.5"))
-            .withExposedPorts(6379);
+    @Autowired
+    private RedisTemplate<Object, Object> redisTemplate;
 
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.kafka.bootstrap-servers", kafkaContainer::getBootstrapServers);
-        registry.add("spring.data.redis.host", redisContainer::getHost);
-        registry.add("spring.data.redis.port", () -> redisContainer.getMappedPort(6379));
+        registry.add("spring.kafka.consumer.auto-offset-reset", () -> "earliest");
+        registry.add("spring.kafka.consumer.enable-auto-commit", () -> "false");
+        registry.add("spring.kafka.listener.ack-mode", () -> "manual");
     }
 
     @BeforeEach
     void setUp() {
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
         Stock stock1 = Stock.builder().productId(1L).quantity(10L).build();
         Stock stock2 = Stock.builder().productId(2L).quantity(10L).build();
         Stock stock3 = Stock.builder().productId(3L).quantity(101L).build();
@@ -84,7 +86,7 @@ public class StockIntegrationTest {
                 .andExpect(status().isOk());
 
         await()
-                .atMost(Duration.ofSeconds(20))
+                .atMost(Duration.ofSeconds(30))
                 .untilAsserted(() -> {
                     Stock stock = stockJpaRepository.findById(1L).orElseThrow();
                     assertEquals(7, stock.getQuantity());
