@@ -17,7 +17,7 @@ public class StockEventProducer {
     public void sendStockDeductedEvent(final StockDeductedEvent stockDeductedEvent) {
         kafkaTemplate.send(TOPIC, String.valueOf(stockDeductedEvent.productId()), stockDeductedEvent)
                 .exceptionally(ex -> {
-                    log.error("Kafka 메시지 전송 실패로 재고 복구 수행");
+                    log.error("Kafka DB 재고 동기화 메시지 발행 실패");
                     return null;
                 });
     }
