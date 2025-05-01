@@ -1,12 +1,14 @@
 package com.sangyunpark.product.application;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
+import com.sangyunpark.product.constant.OutboxStatus;
+import com.sangyunpark.product.domain.entity.StockOutbox;
 import com.sangyunpark.product.exception.BusinessException;
-import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
+import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,9 +22,10 @@ public class StockService {
 
     private final StockJpaRepository stockJpaRepository;
     private final StockRedisRepository stockRedisRepository;
-    private final StockEventProducer stockEventProducer;
     private final OrderDuplicationRepository orderDuplicationRepository;
+    private final StockOutboxRepository stockOutboxRepository;
 
+    @Transactional
     public void decreaseStockAndPublish(final Long productId, final Long quantity, final Long orderId) {
 
         if(!orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))) {
@@ -36,13 +39,26 @@ public class StockService {
             stockRedisRepository.setIfAbsentWithTTL(productId, dbQuantity, Duration.ofMinutes(3));
         }
 
-        final Long remainStock =  stockRedisRepository.decrease(productId, quantity);
+        Long remainStock;
+
+        try {
+            remainStock =  stockRedisRepository.decrease(productId, quantity);
+        } catch (Exception e) {
+            log.error("Redis 재고 감소 실패: productId={}, quantity={}, orderId={}", productId, quantity, orderId);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
 
         if(remainStock == -1) {
             throw new BusinessException(ErrorCode.STOCK_NOT_ENOUGH);
         }
 
-        final StockDeductedEvent event = new StockDeductedEvent(orderId, productId, quantity);
-        stockEventProducer.sendStockDeductedEvent(event);
+        StockOutbox stockOutbox = StockOutbox.builder()
+                .orderId(orderId)
+                .productId(productId)
+                .quantity(quantity)
+                .status(OutboxStatus.PENDING)
+                .build();
+
+        stockOutboxRepository.save(stockOutbox);
     }
 }
