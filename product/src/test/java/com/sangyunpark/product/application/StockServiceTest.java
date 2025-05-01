@@ -1,12 +1,12 @@
 package com.sangyunpark.product.application;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
+import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +28,9 @@ class StockServiceTest {
 
     @InjectMocks
     private StockService stockService;
+
+    @Mock
+    private StockOutboxRepository stockOutboxRepository;
 
     @Mock
     private StockJpaRepository stockJpaRepository;
@@ -61,9 +64,7 @@ class StockServiceTest {
 
         // then
         verify(stockRedisRepository).setIfAbsentWithTTL(productId, 10L, cacheTtl); //
-        verify(stockEventProducer).sendStockDeductedEvent(
-                new StockDeductedEvent(orderId, productId, quantity)
-        );
+        verify(stockOutboxRepository).save(any());
     }
 
     @Test
@@ -82,9 +83,7 @@ class StockServiceTest {
 
         // then
         verify(stockRedisRepository, never()).setIfAbsentWithTTL(any(), any(), any()); // 캐시가 이미 존재하므로 호출 X
-        verify(stockEventProducer).sendStockDeductedEvent(
-                new StockDeductedEvent(orderId, productId, quantity)
-        );
+        verify(stockOutboxRepository).save(any());
     }
 
     @Test
