@@ -21,9 +21,6 @@ import static org.mockito.Mockito.when;
 class StockEventConsumerTest {
 
     @Mock
-    private OrderDuplicationRepository orderDuplicationRepository;
-
-    @Mock
     private StockJpaRepository stockJpaRepository;
 
     @InjectMocks
@@ -49,6 +46,7 @@ class StockEventConsumerTest {
     void consumeStockDeductedEvent_재고부족_예외() {
         // given
         StockDeductedEvent event = new StockDeductedEvent(2L, 10L, 101L);
+
         when(stockJpaRepository.decreaseStock(10L, 101L)).thenReturn(0); // 재고 부족
 
         // when & then
