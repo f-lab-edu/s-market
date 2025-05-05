@@ -1,6 +1,8 @@
 package com.sangyunpark.product.config;
 
 import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.global.ExponentialBackOffWithJitter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -8,12 +10,13 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
-import org.springframework.util.backoff.FixedBackOff;
 
+@Slf4j
 @Configuration
-public class KafkaConsumerConfig {
+public class    KafkaConsumerConfig {
 
-    final String DLT = ".DLT";
+    private final String DLT = ".DLT";
+    private final int MAX_RETRY_COUNT = 5;
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, StockDeductedEvent> kafkaListenerContainerFactory(
@@ -33,6 +36,14 @@ public class KafkaConsumerConfig {
         DeadLetterPublishingRecoverer recover = new DeadLetterPublishingRecoverer(kafkaTemplate,
                 (record, ex) -> new org.apache.kafka.common.TopicPartition(record.topic() + DLT, record.partition()));
 
-        return new DefaultErrorHandler(recover, new FixedBackOff(1000L, 3L));
+        ExponentialBackOffWithJitter backOff = new ExponentialBackOffWithJitter(1000L, 2.0, 16000L, MAX_RETRY_COUNT);
+
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(recover, backOff);
+
+        errorHandler.setRetryListeners((record, ex, deliveryAttempt) -> {
+            log.warn("카프카 컨슈머 재시도 횟수 {} 기록 내용: {}", deliveryAttempt, record);
+        });
+
+        return errorHandler;
     }
 }

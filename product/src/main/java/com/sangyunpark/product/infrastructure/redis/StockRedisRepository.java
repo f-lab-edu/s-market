@@ -49,6 +49,11 @@ public class StockRedisRepository {
         );
     }
 
+    public boolean isExisted(final Long productId) {
+        String key = getKey(productId);
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
     public void increase(final Long productId, final Long amount) {
         redisTemplate.opsForValue().increment(getKey(productId), amount);
     }

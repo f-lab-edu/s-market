@@ -4,6 +4,7 @@ import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
+import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -13,11 +14,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,6 +38,9 @@ class StockServiceTest {
     @Mock
     private StockEventProducer stockEventProducer;
 
+    @Mock
+    private OrderDuplicationRepository orderDuplicationRepository;
+
     private final String ERROR_CODE = "errorCode";
 
     @Test
@@ -44,7 +48,11 @@ class StockServiceTest {
     void 캐시없음_정상차감() {
         // given
         Long productId = 1L, orderId = 100L, quantity = 2L;
-        given(stockJpaRepository.existsById(productId)).willReturn(false);
+        Duration duplicationTtl = Duration.ofSeconds(30L);
+        Duration cacheTtl = Duration.ofMinutes(3L);
+
+        given(orderDuplicationRepository.saveIfAbsent(orderId, duplicationTtl)).willReturn(true);
+        given(stockRedisRepository.isExisted(productId)).willReturn(false); //
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.of(10L));
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(8L);
 
@@ -52,7 +60,7 @@ class StockServiceTest {
         stockService.decreaseStockAndPublish(productId, quantity, orderId);
 
         // then
-        verify(stockRedisRepository).setIfAbsentWithTTL(eq(productId), eq(10L), any());
+        verify(stockRedisRepository).setIfAbsentWithTTL(productId, 10L, cacheTtl); //
         verify(stockEventProducer).sendStockDeductedEvent(
                 new StockDeductedEvent(orderId, productId, quantity)
         );
@@ -63,14 +71,17 @@ class StockServiceTest {
     void 캐시있음_정상차감() {
         // given
         Long productId = 2L, orderId = 200L, quantity = 3L;
-        given(stockJpaRepository.existsById(productId)).willReturn(true);
+        Duration duration = Duration.ofSeconds(30L);
+
+        given(orderDuplicationRepository.saveIfAbsent(orderId, duration)).willReturn(true); // ✅ 고쳐야 할 부분
+        given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(7L);
 
         // when
         stockService.decreaseStockAndPublish(productId, quantity, orderId);
 
         // then
-        verify(stockRedisRepository, never()).setIfAbsentWithTTL(any(), any(), any());
+        verify(stockRedisRepository, never()).setIfAbsentWithTTL(any(), any(), any()); // 캐시가 이미 존재하므로 호출 X
         verify(stockEventProducer).sendStockDeductedEvent(
                 new StockDeductedEvent(orderId, productId, quantity)
         );
@@ -81,7 +92,9 @@ class StockServiceTest {
     void 재고부족_예외() {
         // given
         Long productId = 3L, orderId = 300L, quantity = 20L;
-        given(stockJpaRepository.existsById(productId)).willReturn(true);
+
+        given(orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))).willReturn(true);
+        given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(-1L);
 
         // expect
@@ -95,7 +108,9 @@ class StockServiceTest {
     void 상품없음_예외() {
         // given
         Long productId = 99L, orderId = 400L, quantity = 1L;
-        given(stockJpaRepository.existsById(productId)).willReturn(false);
+
+        given(orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))).willReturn(true);
+        given(stockRedisRepository.isExisted(productId)).willReturn(false);
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.empty());
 
         // expect
