@@ -20,10 +20,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-class OutboxKafkaPublisherTest {
+class OutboxSchedulerTest {
 
     @InjectMocks
-    private OutboxKafkaPublisher publisher;
+    private OutboxScheduler outboxScheduler;
 
     @Mock
     private StockOutboxRepository stockOutboxRepository;
@@ -40,28 +40,33 @@ class OutboxKafkaPublisherTest {
     @DisplayName("PENDING 상태 이벤트를 성공적으로 전송하고 상태를 SEND로 변경한다")
     void PENDING_상태_이벤트_성공적_전송후_상태_SEND_변경() throws Exception {
         // given
+        LocalDateTime fixedNow = LocalDateTime.of(2025, 5, 5, 22, 59, 29); // 고정 시간
+
         StockOutbox event = StockOutbox.builder()
                 .id(1L)
                 .orderId(10L)
                 .productId(1L)
                 .quantity(3L)
                 .status(OutboxStatus.PENDING)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(fixedNow)
+                .updatedAt(fixedNow)
                 .build();
 
-        when(stockOutboxRepository.findPendingOutboxEvent("PENDING"))
+        when(stockOutboxRepository.findPendingOutboxEvent(eq(OutboxStatus.PENDING), any()))
                 .thenReturn(List.of(event));
 
         when(kafkaTemplate.send(anyString(), anyString(), any(StockDeductedEvent.class)))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         // when
-        publisher.publishPendingEvent();
+        outboxScheduler.resendPendingMessages();
 
         // then
-        verify(kafkaTemplate, times(1)).send(anyString(), anyString(), any(StockDeductedEvent.class));
-        verify(stockOutboxRepository, times(1)).bulkUpdateStatus(eq(OutboxStatus.SEND), any(), eq(List.of(1L)));
+        verify(kafkaTemplate, times(1))
+                .send(anyString(), anyString(), any(StockDeductedEvent.class));
+
+        verify(stockOutboxRepository, times(1))
+                .updateStatusByOrderId(eq(event.getId()), eq(OutboxStatus.SEND), any());
     }
 
     @Test
@@ -78,14 +83,14 @@ class OutboxKafkaPublisherTest {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        when(stockOutboxRepository.findPendingOutboxEvent("PENDING"))
+        when(stockOutboxRepository.findPendingOutboxEvent(OutboxStatus.SEND, LocalDateTime.now()))
                 .thenReturn(List.of(event));
 
         when(kafkaTemplate.send(anyString(), anyString(), any(StockDeductedEvent.class)))
                 .thenThrow(new RuntimeException("Kafka send failed"));
 
         // when
-        publisher.publishPendingEvent();
+        outboxScheduler.resendPendingMessages();
 
         // then
         verify(stockOutboxRepository, never()).bulkUpdateStatus(any(), any(), any());
