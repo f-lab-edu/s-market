@@ -1,5 +1,6 @@
 package com.sangyunpark.product.application;
 
+import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.constant.OutboxStatus;
 import com.sangyunpark.product.domain.entity.StockOutbox;
@@ -11,6 +12,7 @@ import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -20,21 +22,16 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class StockService {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final StockJpaRepository stockJpaRepository;
     private final StockRedisRepository stockRedisRepository;
-    private final OrderDuplicationRepository orderDuplicationRepository;
     private final StockOutboxRepository stockOutboxRepository;
 
     @Transactional
     public void decreaseStockAndPublish(final Long productId, final Long quantity, final Long orderId) {
 
-        if(!orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))) {
-            log.info("이미 처리된 주문 orderId: {}", orderId);
-            return;
-        }
-
         if(!stockRedisRepository.isExisted(productId)) {
-            Long dbQuantity = stockJpaRepository.findQuantityByProductId(productId)
+            final Long dbQuantity = stockJpaRepository.findQuantityByProductId(productId)
                     .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
             stockRedisRepository.setIfAbsentWithTTL(productId, dbQuantity, Duration.ofMinutes(3));
         }
@@ -52,7 +49,7 @@ public class StockService {
             throw new BusinessException(ErrorCode.STOCK_NOT_ENOUGH);
         }
 
-        StockOutbox stockOutbox = StockOutbox.builder()
+        final StockOutbox stockOutbox = StockOutbox.builder()
                 .orderId(orderId)
                 .productId(productId)
                 .quantity(quantity)
@@ -60,5 +57,6 @@ public class StockService {
                 .build();
 
         stockOutboxRepository.save(stockOutbox);
+        applicationEventPublisher.publishEvent(new StockDeductedEvent(orderId, productId, quantity));
     }
 }
