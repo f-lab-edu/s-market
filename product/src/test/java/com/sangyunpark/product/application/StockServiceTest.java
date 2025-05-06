@@ -1,6 +1,8 @@
 package com.sangyunpark.product.application;
 
+import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
+import com.sangyunpark.product.domain.entity.StockOutbox;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
@@ -13,15 +15,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Duration;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StockServiceTest {
@@ -39,6 +43,9 @@ class StockServiceTest {
     private StockRedisRepository stockRedisRepository;
 
     @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
     private StockEventProducer stockEventProducer;
 
     @Mock
@@ -54,7 +61,6 @@ class StockServiceTest {
         Duration duplicationTtl = Duration.ofSeconds(30L);
         Duration cacheTtl = Duration.ofMinutes(3L);
 
-        given(orderDuplicationRepository.saveIfAbsent(orderId, duplicationTtl)).willReturn(true);
         given(stockRedisRepository.isExisted(productId)).willReturn(false); //
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.of(10L));
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(8L);
@@ -68,13 +74,13 @@ class StockServiceTest {
     }
 
     @Test
-    @DisplayName("Redis 캐시 있음 → 재고 차감 정상")
+    @DisplayName("Redis 캐시 있음 → 재고 차감 정상 → Outbox 저장 → 이벤트 발행")
     void 캐시있음_정상차감() {
         // given
-        Long productId = 2L, orderId = 200L, quantity = 3L;
-        Duration duration = Duration.ofSeconds(30L);
+        Long productId = 2L;
+        Long orderId = 200L;
+        Long quantity = 3L;
 
-        given(orderDuplicationRepository.saveIfAbsent(orderId, duration)).willReturn(true); // ✅ 고쳐야 할 부분
         given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(7L);
 
@@ -82,8 +88,10 @@ class StockServiceTest {
         stockService.decreaseStockAndPublish(productId, quantity, orderId);
 
         // then
-        verify(stockRedisRepository, never()).setIfAbsentWithTTL(any(), any(), any()); // 캐시가 이미 존재하므로 호출 X
-        verify(stockOutboxRepository).save(any());
+        verify(stockRedisRepository, never()).setIfAbsentWithTTL(any(), any(), any()); // 캐시 이미 있음
+        verify(stockRedisRepository).decrease(productId, quantity);                    // Redis 차감 호출됨
+        verify(stockOutboxRepository).save(any(StockOutbox.class));                    // Outbox 저장됨
+        verify(applicationEventPublisher).publishEvent(any(StockDeductedEvent.class)); // 이벤트 발행됨
     }
 
     @Test
@@ -92,7 +100,6 @@ class StockServiceTest {
         // given
         Long productId = 3L, orderId = 300L, quantity = 20L;
 
-        given(orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))).willReturn(true);
         given(stockRedisRepository.isExisted(productId)).willReturn(true);
         given(stockRedisRepository.decrease(productId, quantity)).willReturn(-1L);
 
@@ -108,7 +115,6 @@ class StockServiceTest {
         // given
         Long productId = 99L, orderId = 400L, quantity = 1L;
 
-        given(orderDuplicationRepository.saveIfAbsent(orderId, Duration.ofSeconds(30L))).willReturn(true);
         given(stockRedisRepository.isExisted(productId)).willReturn(false);
         given(stockJpaRepository.findQuantityByProductId(productId)).willReturn(Optional.empty());
 
@@ -116,5 +122,38 @@ class StockServiceTest {
         assertThatThrownBy(() -> stockService.decreaseStockAndPublish(productId, quantity, orderId))
                 .isInstanceOf(BusinessException.class)
                 .extracting(ERROR_CODE).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
+    }
+
+    @Test
+    @DisplayName("Redis 캐시 없음 → DB 조회 후 캐싱 → 재고 차감 → Outbox 저장 → 이벤트 발행")
+    void 캐시없음_DB조회_캐싱_차감_이벤트발행() {
+        // given
+        Long productId = 2L;
+        Long orderId = 200L;
+        Long quantity = 3L;
+        Long dbQuantity = 10L;
+
+        given(stockRedisRepository.isExisted(productId))
+                .willReturn(false);
+        given(stockJpaRepository.findQuantityByProductId(productId))
+                .willReturn(Optional.of(dbQuantity));
+        given(stockRedisRepository.decrease(productId, quantity))
+                .willReturn(dbQuantity - quantity);
+
+        // when
+        assertDoesNotThrow(() ->
+                stockService.decreaseStockAndPublish(productId, quantity, orderId)
+        );
+
+        // then
+        verify(stockJpaRepository, times(1)).findQuantityByProductId(productId); // DB 조회
+        verify(stockRedisRepository, times(1))
+                .setIfAbsentWithTTL(eq(productId), eq(dbQuantity), any()); // Redis 캐싱
+        verify(stockRedisRepository, times(1))
+                .decrease(productId, quantity); // 차감
+        verify(stockOutboxRepository, times(1))
+                .save(any(StockOutbox.class)); // Outbox 저장
+        verify(applicationEventPublisher, times(1))
+                .publishEvent(any(StockDeductedEvent.class)); // 이벤트 발행
     }
 }
