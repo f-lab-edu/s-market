@@ -12,10 +12,14 @@ import java.util.List;
 
 public interface StockOutboxRepository extends JpaRepository<StockOutbox, Long> {
 
-    @Query(value = "SELECT * FROM stock_outbox WHERE status = :status ORDER BY created_at LIMIT 100", nativeQuery = true)
-    List<StockOutbox> findPendingOutboxEvent(@Param("status") String status);
+    @Query(value = "SELECT o FROM StockOutbox o WHERE o.status = :status ORDER BY o.createdAt LIMIT 100")
+    List<StockOutbox> findPendingOutboxEvent(@Param("status") OutboxStatus status, LocalDateTime createdAt);
 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE StockOutbox o SET o.status = :status, o.updatedAt = :updatedAt WHERE o.id IN :ids")
-    int bulkUpdateStatus(@Param("status") OutboxStatus status, @Param("updatedAt") LocalDateTime updatedAt, @Param("ids") List<Long> ids);
+    void bulkUpdateStatus(@Param("status") OutboxStatus status, @Param("updatedAt") LocalDateTime updatedAt, @Param("ids") List<Long> ids);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StockOutbox o SET o.status = :status, o.updatedAt = :updatedAt WHERE o.orderId = :orderId")
+    void updateStatusByOrderId(@Param("orderId") Long orderId, @Param("status") OutboxStatus status, @Param("updatedAt") LocalDateTime updatedAt);
 }
