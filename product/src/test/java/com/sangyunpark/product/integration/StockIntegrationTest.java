@@ -3,6 +3,7 @@ package com.sangyunpark.product.integration;
 import com.sangyunpark.product.domain.entity.Stock;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,11 @@ public class StockIntegrationTest {
         stockRedisRepository.setQuantity(1L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(2L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(3L, 101L, Duration.ofSeconds(100));
+    }
+
+    @AfterEach
+    void tearDown() {
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
     }
 
     @Test
