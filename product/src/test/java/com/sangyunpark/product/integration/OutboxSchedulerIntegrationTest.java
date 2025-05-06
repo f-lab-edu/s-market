@@ -3,9 +3,12 @@ package com.sangyunpark.product.integration;
 
 import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.OutboxStatus;
+import com.sangyunpark.product.domain.entity.Stock;
 import com.sangyunpark.product.domain.entity.StockOutbox;
+import com.sangyunpark.product.infrastructure.kafka.OutboxScheduler;
+import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
 import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
-import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,13 +34,22 @@ import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
 @AutoConfigureMockMvc
 @Testcontainers
 @EnableScheduling
-public class OutboxKafkaPublisherIntegrationTest {
+public class OutboxSchedulerIntegrationTest {
 
     @Autowired
     private StockOutboxRepository stockOutboxRepository;
 
     @Autowired
+    private StockJpaRepository stockJpaRepository;
+
+    @Autowired
     private KafkaTemplate<String, StockDeductedEvent> kafkaTemplate;
+
+    @Autowired
+    private OutboxScheduler outboxScheduler;
+
+    @Autowired
+    private EntityManager em;
 
     @Container
     static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.4.0"));
@@ -54,10 +66,10 @@ public class OutboxKafkaPublisherIntegrationTest {
 
     @Test
     @DisplayName("Outbox 이벤트가 Kafka로 전송되고 상태가 SEND로 업데이트된다")
-    void outboxEventIsPublishedAndUpdated() {
+    void Outbox_이벤트가_Kafka로_전송되고_상태가_SEND로_업데이트된다() {
         // given
         StockOutbox outbox = StockOutbox.builder()
-                .orderId(123L)
+                .orderId(1L)
                 .productId(1L)
                 .quantity(5L)
                 .status(OutboxStatus.PENDING)
@@ -66,6 +78,12 @@ public class OutboxKafkaPublisherIntegrationTest {
                 .build();
         stockOutboxRepository.save(outbox);
 
+        stockJpaRepository.save(new Stock(null, 5L, 1L));
+
+        // when
+        outboxScheduler.resendPendingMessages();
+
+        // then
         await()
                 .atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> {
