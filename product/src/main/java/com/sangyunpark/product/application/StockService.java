@@ -1,11 +1,12 @@
 package com.sangyunpark.product.application;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.constant.OutboxType;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.constant.OutboxStatus;
 import com.sangyunpark.product.domain.entity.StockOutbox;
 import com.sangyunpark.product.exception.BusinessException;
-import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
 import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
@@ -16,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -54,9 +56,31 @@ public class StockService {
                 .productId(productId)
                 .quantity(quantity)
                 .status(OutboxStatus.PENDING)
+                .type(OutboxType.DECR)
                 .build();
 
         stockOutboxRepository.save(stockOutbox);
         applicationEventPublisher.publishEvent(new StockDeductedEvent(orderId, productId, quantity));
+    }
+
+    @Transactional
+    public void increaseStock(final Long productId, final Long quantity) {
+        Long result = stockRedisRepository.increase(productId, quantity);
+        if (result == -1) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        final String eventId = UUID.randomUUID().toString();
+
+        StockOutbox stockOutbox = StockOutbox.builder()
+                .productId(productId)
+                .eventId(eventId)
+                .quantity(quantity)
+                .status(OutboxStatus.PENDING)
+                .type(OutboxType.INCR)
+                .build();
+
+        stockOutboxRepository.save(stockOutbox);
+        applicationEventPublisher.publishEvent(new StockIncreasedEvent(eventId, productId, quantity));
     }
 }
