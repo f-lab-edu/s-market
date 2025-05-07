@@ -1,6 +1,6 @@
 package com.sangyunpark.product.config;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
