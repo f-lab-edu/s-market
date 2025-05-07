@@ -152,7 +152,7 @@ public class StockIntegrationTest {
                                     .contentType(MediaType.APPLICATION_JSON))
                             .andExpect(status().isOk());
                 } catch (Exception e) {
-                    // 예외 발생 무시 (일부 요청은 중복 등으로 실패 가능)
+
                 } finally {
                     latch.countDown();
                 }
@@ -167,5 +167,57 @@ public class StockIntegrationTest {
         Stock stock = stockJpaRepository.findById(3L).orElseThrow();
         long finalQuantity = stock.getQuantity();
         assertTrue(finalQuantity >= 0);
+    }
+
+    @Test
+    @DisplayName("재고 증가 요청 정상 동작 테스트")
+    void 재고증가_정상동작() throws Exception {
+        mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 1)
+                        .param("quantity", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Stock stock = stockJpaRepository.findById(1L).orElseThrow();
+            assertEquals(15, stock.getQuantity());
+        });
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 상품 재고 증가 요청 시 404 오류 반환")
+    void 재고증가_상품없음() throws Exception {
+        mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 999)
+                        .param("quantity", "3")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("100개의 동시 재고 증가 요청 시 재고가 정확히 반영되어야 한다.")
+    void 동시에_재고증가_정합성확인() throws Exception {
+        int threadCount = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            int finalI = i;
+            executor.submit(() -> {
+                try {
+                    mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 3)
+                            .param("quantity", "1")
+                            .contentType(MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        TimeUnit.SECONDS.sleep(5);
+
+        Stock stock = stockJpaRepository.findById(3L).orElseThrow();
+        assertEquals(101 + threadCount, stock.getQuantity());
     }
 }

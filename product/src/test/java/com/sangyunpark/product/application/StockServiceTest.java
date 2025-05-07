@@ -5,6 +5,7 @@ import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.domain.entity.StockOutbox;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
@@ -155,5 +156,37 @@ class StockServiceTest {
                 .save(any(StockOutbox.class)); // Outbox 저장
         verify(applicationEventPublisher, times(1))
                 .publishEvent(any(StockDeductedEvent.class)); // 이벤트 발행
+    }
+
+    @Test
+    @DisplayName("재고 증가 성공 → Redis 증가 → Outbox 저장 → 이벤트 발행")
+    void 재고증가_정상처리() {
+        // given
+        Long productId = 5L;
+        Long quantity = 4L;
+
+        given(stockRedisRepository.increase(productId, quantity)).willReturn(14L);
+
+        // when & then
+        assertDoesNotThrow(() -> stockService.increaseStock(productId, quantity));
+
+        verify(stockRedisRepository).increase(productId, quantity);         // Redis 증가
+        verify(stockOutboxRepository).save(any(StockOutbox.class));         // Outbox 저장
+        verify(applicationEventPublisher).publishEvent(any(StockIncreasedEvent.class)); // 이벤트 발행
+    }
+
+    @Test
+    @DisplayName("재고 증가 실패 → 상품 없음 → 예외 발생")
+    void 재고증가_상품없음_예외() {
+        // given
+        Long productId = 6L;
+        Long quantity = 3L;
+
+        given(stockRedisRepository.increase(productId, quantity)).willReturn(-1L);
+
+        // when & then
+        assertThatThrownBy(() -> stockService.increaseStock(productId, quantity))
+                .isInstanceOf(BusinessException.class)
+                .extracting(ERROR_CODE).isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
     }
 }

@@ -46,4 +46,19 @@ class StockEventProducerTest {
         // then
         verify(kafkaDecrTemplate).send("stock.deducted", String.valueOf(event.productId()), event);
     }
+
+    @Test
+    @DisplayName("재고 증가 이벤트가 정상적으로 전송되는지 확인한다.")
+    void 재고_증가_이벤트_전송_성공_확인() {
+        // given
+        StockIncreasedEvent event = new StockIncreasedEvent("event-123", 1L, 5L);
+
+        // when
+        when(kafkaIncrTemplate.send("stock.increased", String.valueOf(event.productId()), event))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        stockEventProducer.sendStockIncreasedEvent(event);
+
+        // then
+        verify(kafkaIncrTemplate).send("stock.increased", String.valueOf(event.productId()), event);
+    }
 }
