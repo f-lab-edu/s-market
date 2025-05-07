@@ -22,4 +22,8 @@ public interface StockOutboxRepository extends JpaRepository<StockOutbox, Long> 
     @Modifying(clearAutomatically = true)
     @Query("UPDATE StockOutbox o SET o.status = :status, o.updatedAt = :updatedAt WHERE o.orderId = :orderId")
     void updateStatusByOrderId(@Param("orderId") Long orderId, @Param("status") OutboxStatus status, @Param("updatedAt") LocalDateTime updatedAt);
+
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE StockOutbox o SET o.status = :status, o.updatedAt = :updatedAt WHERE o.eventId = :eventId")
+    void updateStatusByEventId(@Param("eventId") String eventId, @Param("status") OutboxStatus status, @Param("updatedAt") LocalDateTime updatedAt);
 }
