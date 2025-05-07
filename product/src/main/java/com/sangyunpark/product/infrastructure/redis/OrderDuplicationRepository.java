@@ -11,13 +11,14 @@ import java.time.Duration;
 public class OrderDuplicationRepository {
 
     private final StringRedisTemplate stringRedisTemplate;
-    private final String PREFIX = "stock:deducted:";
+    private final String DECR_PREFIX = "stock:deducted:";
+    private final String INCR_PREFIX = "stock:increased:";
 
-    private String getKey(final Long orderId) {
-        return PREFIX + orderId;
+    public boolean saveIfAbsentByOrderId(final Long orderId, final Duration ttl) {
+        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(DECR_PREFIX + orderId, "done", ttl));
     }
 
-    public boolean saveIfAbsent(final Long orderId, final Duration ttl) {
-        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(getKey(orderId), "done", ttl));
+    public boolean saveIfAbsentByEventId(final String eventId, final Duration ttl) {
+        return Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(INCR_PREFIX + eventId, "done", ttl));
     }
 }
