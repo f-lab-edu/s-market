@@ -1,8 +1,10 @@
 package com.sangyunpark.product.infrastructure.kafka;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.constant.OutboxType;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.OutboxStatus;
 import com.sangyunpark.product.domain.entity.StockOutbox;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import com.sangyunpark.product.infrastructure.repository.StockOutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +31,7 @@ class OutboxSchedulerTest {
     private StockOutboxRepository stockOutboxRepository;
 
     @Mock
-    private KafkaTemplate<String, StockDeductedEvent> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
 
     @BeforeEach
     void setUp() {
@@ -37,23 +39,19 @@ class OutboxSchedulerTest {
     }
 
     @Test
-    @DisplayName("PENDING 상태 이벤트를 성공적으로 전송하고 상태를 SEND로 변경한다")
-    void PENDING_상태_이벤트_성공적_전송후_상태_SEND_변경() throws Exception {
+    @DisplayName("DECR 타입 Outbox 이벤트를 전송하고 상태를 SEND로 변경한다")
+    void resendPendingMessages_DECR() {
         // given
-        LocalDateTime fixedNow = LocalDateTime.of(2025, 5, 5, 22, 59, 29); // 고정 시간
-
-        StockOutbox event = StockOutbox.builder()
-                .id(1L)
-                .orderId(10L)
+        StockOutbox outbox = StockOutbox.builder()
+                .orderId(100L)
                 .productId(1L)
                 .quantity(3L)
+                .type(OutboxType.DECR)
                 .status(OutboxStatus.PENDING)
-                .createdAt(fixedNow)
-                .updatedAt(fixedNow)
                 .build();
 
         when(stockOutboxRepository.findPendingOutboxEvent(eq(OutboxStatus.PENDING), any()))
-                .thenReturn(List.of(event));
+                .thenReturn(List.of(outbox));
 
         when(kafkaTemplate.send(anyString(), anyString(), any(StockDeductedEvent.class)))
                 .thenReturn(CompletableFuture.completedFuture(null));
@@ -62,16 +60,41 @@ class OutboxSchedulerTest {
         outboxScheduler.resendPendingMessages();
 
         // then
-        verify(kafkaTemplate, times(1))
-                .send(anyString(), anyString(), any(StockDeductedEvent.class));
-
-        verify(stockOutboxRepository, times(1))
-                .updateStatusByOrderId(eq(event.getId()), eq(OutboxStatus.SEND), any());
+        verify(kafkaTemplate).send(anyString(), anyString(), any(StockDeductedEvent.class));
+        verify(stockOutboxRepository).updateStatusByOrderId(eq(100L), eq(OutboxStatus.SEND), any(LocalDateTime.class));
     }
+
+
+    @Test
+    @DisplayName("INCR 타입 Outbox 이벤트를 전송하고 상태를 SEND로 변경한다")
+    void resendPendingMessages_INCR() {
+        // given
+        StockOutbox outbox = StockOutbox.builder()
+                .eventId("event-123")
+                .productId(2L)
+                .quantity(5L)
+                .type(OutboxType.INCR)
+                .status(OutboxStatus.PENDING)
+                .build();
+
+        when(stockOutboxRepository.findPendingOutboxEvent(eq(OutboxStatus.PENDING), any()))
+                .thenReturn(List.of(outbox));
+
+        when(kafkaTemplate.send(anyString(), anyString(), any(StockIncreasedEvent.class)))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        // when
+        outboxScheduler.resendPendingMessages();
+
+        // then
+        verify(kafkaTemplate).send(anyString(), anyString(), any(StockIncreasedEvent.class));
+        verify(stockOutboxRepository).updateStatusByEventId(eq("event-123"), eq(OutboxStatus.SEND), any(LocalDateTime.class));
+    }
+
 
     @Test
     @DisplayName("Kafka 전송 실패 시 상태를 변경하지 않는다")
-    void KafKa_전송_실패시_상태_변경안함() throws Exception {
+    void KafKa_전송_실패시_상태_변경안함() {
         // given
         StockOutbox event = StockOutbox.builder()
                 .id(1L)
