@@ -65,7 +65,7 @@ public class StockService {
 
     @Transactional
     public void increaseStock(final Long productId, final Long quantity) {
-        Long result = stockRedisRepository.increase(productId, quantity);
+        final Long result = stockRedisRepository.increase(productId, quantity);
         if (result == -1) {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
         }
