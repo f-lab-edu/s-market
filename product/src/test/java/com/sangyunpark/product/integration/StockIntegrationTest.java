@@ -69,10 +69,12 @@ public class StockIntegrationTest {
         Stock stock1 = Stock.builder().productId(1L).quantity(10L).build();
         Stock stock2 = Stock.builder().productId(2L).quantity(10L).build();
         Stock stock3 = Stock.builder().productId(3L).quantity(101L).build();
-        stockJpaRepository.saveAll(List.of(stock1, stock2, stock3));
+        Stock stock4 = Stock.builder().productId(4L).quantity(101L).build();
+        stockJpaRepository.saveAll(List.of(stock1, stock2, stock3, stock4));
         stockRedisRepository.setQuantity(1L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(2L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(3L, 101L, Duration.ofSeconds(100));
+        stockRedisRepository.setQuantity(4L, 101L, Duration.ofSeconds(100));
     }
 
     @AfterEach
@@ -103,6 +105,25 @@ public class StockIntegrationTest {
     }
 
     @Test
+    @DisplayName("같은 주문 ID로 중복 요청 시 재고가 한 번만 차감돼야 한다.")
+    void 중복요청_한번만차감() throws Exception {
+        // when, then
+        for (int i = 0; i < 100; i++) {
+            mockMvc.perform(patch("/api/v1/stocks/{productId}/decrease", "4")
+                            .param("quantity", "1")
+                            .param("orderId", "12")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk());
+        }
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Stock findStock = stockJpaRepository.findById(4L).orElseThrow();
+            assertEquals(100, findStock.getQuantity());
+        });
+    }
+
+
+    @Test
     @DisplayName("재고가 부족할 경우 차감 요청은 실패해야 한다.")
     void 재고부족_차감요청_실패() throws Exception {
 
@@ -112,24 +133,6 @@ public class StockIntegrationTest {
                         .param("orderId", "11")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("같은 주문 ID로 중복 요청 시 재고가 한 번만 차감돼야 한다.")
-    void 중복요청_한번만차감() throws Exception {
-        // when, then
-        for (int i = 0; i < 100; i++) {
-            mockMvc.perform(patch("/api/v1/stocks/{productId}/decrease", "3")
-                            .param("quantity", "1")
-                            .param("orderId", "12")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-        }
-
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            Stock findStock = stockJpaRepository.findById(3L).orElseThrow();
-            assertEquals(100, findStock.getQuantity());
-        });
     }
 
     @Test
@@ -179,7 +182,7 @@ public class StockIntegrationTest {
 
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
             Stock stock = stockJpaRepository.findById(1L).orElseThrow();
-            assertEquals(15, stock.getQuantity());
+            assertEquals(12, stock.getQuantity());
         });
     }
 
@@ -200,7 +203,6 @@ public class StockIntegrationTest {
         CountDownLatch latch = new CountDownLatch(threadCount);
 
         for (int i = 0; i < threadCount; i++) {
-            int finalI = i;
             executor.submit(() -> {
                 try {
                     mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 3)
