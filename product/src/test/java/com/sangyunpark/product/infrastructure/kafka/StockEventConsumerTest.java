@@ -1,6 +1,6 @@
 package com.sangyunpark.product.infrastructure.kafka;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.constant.OutboxStatus;
 import com.sangyunpark.product.exception.BusinessException;
@@ -55,7 +55,7 @@ class StockEventConsumerTest {
         StockDeductedEvent event = new StockDeductedEvent(1L, 5L, 100L);
 
         // orderId는 100L로 일관되게 사용됨
-        when(orderDuplicationRepository.saveIfAbsent(eq(1L), any())).thenReturn(true);
+        when(orderDuplicationRepository.saveIfAbsentByOrderId(eq(1L), any())).thenReturn(true);
         when(stockJpaRepository.decreaseStock(event.productId(), event.quantity())).thenReturn(1);
 
         // when & then
@@ -74,7 +74,7 @@ class StockEventConsumerTest {
         // given
         StockDeductedEvent event = new StockDeductedEvent(1L, 5L, 100L);
 
-        when(orderDuplicationRepository.saveIfAbsent(eq(1L), any())).thenReturn(true);
+        when(orderDuplicationRepository.saveIfAbsentByOrderId(eq(1L), any())).thenReturn(true);
         when(stockJpaRepository.decreaseStock(event.productId(), event.quantity())).thenReturn(0);
 
         // when & then
