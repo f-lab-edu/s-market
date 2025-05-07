@@ -1,6 +1,7 @@
 package com.sangyunpark.product.infrastructure.kafka;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,13 +20,16 @@ import static org.mockito.Mockito.when;
 class StockEventProducerTest {
 
     @Mock
-    private KafkaTemplate<String, StockDeductedEvent> kafkaTemplate;
+    private KafkaTemplate<String, StockDeductedEvent> kafkaDecrTemplate;
+
+    @Mock
+    private KafkaTemplate<String, StockIncreasedEvent> kafkaIncrTemplate;
 
     private StockEventProducer stockEventProducer;
 
     @BeforeEach
     void setUp() {
-        stockEventProducer = new StockEventProducer(kafkaTemplate);
+        stockEventProducer = new StockEventProducer(kafkaDecrTemplate, kafkaIncrTemplate);
     }
 
     @Test
@@ -35,11 +39,11 @@ class StockEventProducerTest {
         StockDeductedEvent event = new StockDeductedEvent(1L, 5L, 100L);
 
         // when
-        when(kafkaTemplate.send("stock.deducted", String.valueOf(event.productId()), event))
+        when(kafkaDecrTemplate.send("stock.deducted", String.valueOf(event.productId()), event))
                 .thenReturn(CompletableFuture.completedFuture(null));
         stockEventProducer.sendStockDeductedEvent(event);
 
         // then
-        verify(kafkaTemplate).send("stock.deducted", String.valueOf(event.productId()), event);
+        verify(kafkaDecrTemplate).send("stock.deducted", String.valueOf(event.productId()), event);
     }
 }
