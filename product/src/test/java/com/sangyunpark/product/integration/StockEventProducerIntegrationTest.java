@@ -1,6 +1,6 @@
 package com.sangyunpark.product.integration;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
