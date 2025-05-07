@@ -1,6 +1,6 @@
 package com.sangyunpark.product.application;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
 import com.sangyunpark.product.domain.entity.StockOutbox;
 import com.sangyunpark.product.exception.BusinessException;
