@@ -1,6 +1,7 @@
 package com.sangyunpark.product.domain.entity;
 
 import com.sangyunpark.product.constant.OutboxStatus;
+import com.sangyunpark.product.constant.OutboxType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,8 +23,9 @@ public class StockOutbox {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
     private Long orderId;
+
+    private String eventId;
 
     @Column(nullable = false)
     private Long productId;
@@ -34,6 +36,10 @@ public class StockOutbox {
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private OutboxStatus status;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private OutboxType type;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
