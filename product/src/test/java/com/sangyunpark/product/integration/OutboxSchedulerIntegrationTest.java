@@ -1,7 +1,8 @@
 package com.sangyunpark.product.integration;
 
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.constant.OutboxType;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.OutboxStatus;
 import com.sangyunpark.product.domain.entity.Stock;
 import com.sangyunpark.product.domain.entity.StockOutbox;
@@ -71,7 +72,9 @@ public class OutboxSchedulerIntegrationTest {
         StockOutbox outbox = StockOutbox.builder()
                 .orderId(1L)
                 .productId(1L)
+                .eventId("")
                 .quantity(5L)
+                .type(OutboxType.DECR)
                 .status(OutboxStatus.PENDING)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
