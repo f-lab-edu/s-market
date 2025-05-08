@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/smarket
     username: root
-    password:
+    password: password
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -28,6 +28,7 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    bootstrap-servers: localhost:9092
 
   flyway:
     enabled: true
@@ -35,8 +36,14 @@ spring:
 
   data:
     redis:
-      host: localhost
-      port: 6379
+      cluster:
+        nodes:
+          - localhost:7000
+          - localhost:7001
+          - localhost:7002
+          - localhost:7003
+          - localhost:7004
+          - localhost:7005
 
   jackson:
     serialization:
