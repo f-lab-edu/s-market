@@ -1,6 +1,8 @@
 package com.sangyunpark.product.integration;
 
 import com.sangyunpark.product.domain.entity.Stock;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -12,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,6 +25,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,6 +57,10 @@ public class StockIntegrationTest {
 
     @Autowired
     private RedisTemplate<Object, Object> redisTemplate;
+
+    @Autowired
+    private KafkaTemplate<String, Object> kafkaTemplate;
+
 
 
     @DynamicPropertySource
@@ -222,4 +230,44 @@ public class StockIntegrationTest {
         Stock stock = stockJpaRepository.findById(3L).orElseThrow();
         assertEquals(101 + threadCount, stock.getQuantity());
     }
+
+    @Test
+    @DisplayName("DLT: 재고 차감 실패 복구 처리")
+    void DLT_재고차감_복구() {
+        // given
+        final long productId = 1L;
+        final long quantity = 5L;
+        final long orderId = 20L;
+
+        StockDeductedEvent event = new StockDeductedEvent(orderId, productId, quantity);
+
+        // when
+        kafkaTemplate.send("stock.deducted.DLT", event);
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Long redisQuantity = stockRedisRepository.getQuantity(productId);
+            assertEquals(15L, redisQuantity);
+        });
+    }
+
+    @Test
+    @DisplayName("DLT: 재고 증가 실패 취소 처리")
+    void DLT_재고증가_복구취소() {
+        // given
+        long productId = 1L;
+        long quantity = 5L;
+
+        StockIncreasedEvent event = new StockIncreasedEvent(UUID.randomUUID().toString(), productId, quantity);
+
+        // when
+        kafkaTemplate.send("stock.increased.DLT", event);
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Long redisQuantity = stockRedisRepository.getQuantity(productId);
+            assertEquals(5L, redisQuantity);
+        });
+    }
+
 }

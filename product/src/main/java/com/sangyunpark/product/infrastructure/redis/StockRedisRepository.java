@@ -68,4 +68,10 @@ public class StockRedisRepository {
                 String.valueOf(amount)
         );
     }
+
+    public Long getQuantity(Long productId) {
+        String key = getKey(productId);
+        Object value = redisTemplate.opsForValue().get(key);
+        return value != null ? Long.parseLong(value.toString()) : null;
+    }
 }
