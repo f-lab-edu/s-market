@@ -1,8 +1,11 @@
 package com.sangyunpark.product.integration;
 
 import com.sangyunpark.product.domain.entity.Stock;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockIncreasedEvent;
 import com.sangyunpark.product.infrastructure.redis.StockRedisRepository;
 import com.sangyunpark.product.infrastructure.repository.StockJpaRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -21,6 +25,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,6 +58,10 @@ public class StockIntegrationTest {
     @Autowired
     private RedisTemplate<Object, Object> redisTemplate;
 
+    @Autowired
+    private KafkaTemplate<String, Object> kafkaTemplate;
+
+
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
@@ -68,10 +77,17 @@ public class StockIntegrationTest {
         Stock stock1 = Stock.builder().productId(1L).quantity(10L).build();
         Stock stock2 = Stock.builder().productId(2L).quantity(10L).build();
         Stock stock3 = Stock.builder().productId(3L).quantity(101L).build();
-        stockJpaRepository.saveAll(List.of(stock1, stock2, stock3));
+        Stock stock4 = Stock.builder().productId(4L).quantity(101L).build();
+        stockJpaRepository.saveAll(List.of(stock1, stock2, stock3, stock4));
         stockRedisRepository.setQuantity(1L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(2L, 10L, Duration.ofSeconds(100));
         stockRedisRepository.setQuantity(3L, 101L, Duration.ofSeconds(100));
+        stockRedisRepository.setQuantity(4L, 101L, Duration.ofSeconds(100));
+    }
+
+    @AfterEach
+    void tearDown() {
+        redisTemplate.getConnectionFactory().getConnection().flushAll();
     }
 
     @Test
@@ -97,6 +113,25 @@ public class StockIntegrationTest {
     }
 
     @Test
+    @DisplayName("같은 주문 ID로 중복 요청 시 재고가 한 번만 차감돼야 한다.")
+    void 중복요청_한번만차감() throws Exception {
+        // when, then
+        for (int i = 0; i < 100; i++) {
+            mockMvc.perform(patch("/api/v1/stocks/{productId}/decrease", "4")
+                            .param("quantity", "1")
+                            .param("orderId", "12")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk());
+        }
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Stock findStock = stockJpaRepository.findById(4L).orElseThrow();
+            assertEquals(100, findStock.getQuantity());
+        });
+    }
+
+
+    @Test
     @DisplayName("재고가 부족할 경우 차감 요청은 실패해야 한다.")
     void 재고부족_차감요청_실패() throws Exception {
 
@@ -106,24 +141,6 @@ public class StockIntegrationTest {
                         .param("orderId", "11")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("같은 주문 ID로 중복 요청 시 재고가 한 번만 차감돼야 한다.")
-    void 중복요청_한번만차감() throws Exception {
-        // when, then
-        for (int i = 0; i < 100; i++) {
-            mockMvc.perform(patch("/api/v1/stocks/{productId}/decrease", "3")
-                            .param("quantity", "1")
-                            .param("orderId", "12")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-        }
-
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
-            Stock findStock = stockJpaRepository.findById(3L).orElseThrow();
-            assertEquals(100, findStock.getQuantity());
-        });
     }
 
     @Test
@@ -146,7 +163,7 @@ public class StockIntegrationTest {
                                     .contentType(MediaType.APPLICATION_JSON))
                             .andExpect(status().isOk());
                 } catch (Exception e) {
-                    // 예외 발생 무시 (일부 요청은 중복 등으로 실패 가능)
+
                 } finally {
                     latch.countDown();
                 }
@@ -162,4 +179,95 @@ public class StockIntegrationTest {
         long finalQuantity = stock.getQuantity();
         assertTrue(finalQuantity >= 0);
     }
+
+    @Test
+    @DisplayName("재고 증가 요청 정상 동작 테스트")
+    void 재고증가_정상동작() throws Exception {
+        mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 1)
+                        .param("quantity", "5")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Stock stock = stockJpaRepository.findById(1L).orElseThrow();
+            assertEquals(12, stock.getQuantity());
+        });
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 상품 재고 증가 요청 시 404 오류 반환")
+    void 재고증가_상품없음() throws Exception {
+        mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 999)
+                        .param("quantity", "3")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("100개의 동시 재고 증가 요청 시 재고가 정확히 반영되어야 한다.")
+    void 동시에_재고증가_정합성확인() throws Exception {
+        int threadCount = 100;
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+        CountDownLatch latch = new CountDownLatch(threadCount);
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.submit(() -> {
+                try {
+                    mockMvc.perform(patch("/api/v1/stocks/{productId}/increase", 3)
+                            .param("quantity", "1")
+                            .contentType(MediaType.APPLICATION_JSON));
+                } catch (Exception e) {
+
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        latch.await();
+        TimeUnit.SECONDS.sleep(5);
+
+        Stock stock = stockJpaRepository.findById(3L).orElseThrow();
+        assertEquals(101 + threadCount, stock.getQuantity());
+    }
+
+    @Test
+    @DisplayName("DLT: 재고 차감 실패 복구 처리")
+    void DLT_재고차감_복구() {
+        // given
+        final long productId = 1L;
+        final long quantity = 5L;
+        final long orderId = 20L;
+
+        StockDeductedEvent event = new StockDeductedEvent(orderId, productId, quantity);
+
+        // when
+        kafkaTemplate.send("stock.deducted.DLT", event);
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Long redisQuantity = stockRedisRepository.getQuantity(productId);
+            assertEquals(15L, redisQuantity);
+        });
+    }
+
+    @Test
+    @DisplayName("DLT: 재고 증가 실패 취소 처리")
+    void DLT_재고증가_복구취소() {
+        // given
+        long productId = 1L;
+        long quantity = 5L;
+
+        StockIncreasedEvent event = new StockIncreasedEvent(UUID.randomUUID().toString(), productId, quantity);
+
+        // when
+        kafkaTemplate.send("stock.increased.DLT", event);
+
+        // then
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            Long redisQuantity = stockRedisRepository.getQuantity(productId);
+            assertEquals(5L, redisQuantity);
+        });
+    }
+
 }

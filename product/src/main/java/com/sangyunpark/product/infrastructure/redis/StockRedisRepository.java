@@ -27,6 +27,14 @@ public class StockRedisRepository {
             end
             """;
 
+    private final String INCREASE_SCRIPT = """
+            if redis.call("exists", KEYS[1]) == 1 then
+              return redis.call("incrby", KEYS[1], ARGV[1])
+            else
+              return -1
+            end
+            """;
+
     private String getKey(final Long productId) {
         return STOCK_KEY + productId;
     }
@@ -41,7 +49,6 @@ public class StockRedisRepository {
     }
 
     public Long decrease(final Long productId, final Long amount) {
-
         return redisTemplate.execute(
                 new DefaultRedisScript<>(DECREASE_SCRIPT, Long.class),
                 List.of(getKey(productId)),
@@ -54,7 +61,17 @@ public class StockRedisRepository {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
 
-    public void increase(final Long productId, final Long amount) {
-        redisTemplate.opsForValue().increment(getKey(productId), amount);
+    public Long increase(final Long productId, final Long amount) {
+        return redisTemplate.execute(
+                new DefaultRedisScript<>(INCREASE_SCRIPT, Long.class),
+                List.of(getKey(productId)),
+                String.valueOf(amount)
+        );
+    }
+
+    public Long getQuantity(Long productId) {
+        String key = getKey(productId);
+        Object value = redisTemplate.opsForValue().get(key);
+        return value != null ? Long.parseLong(value.toString()) : null;
     }
 }

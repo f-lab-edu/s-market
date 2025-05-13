@@ -1,4 +1,4 @@
-package com.sangyunpark.product.application.event;
+package com.sangyunpark.product.infrastructure.kafka.event;
 
 public record StockDeductedEvent(
         Long orderId,

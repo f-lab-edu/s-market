@@ -1,0 +1,124 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: smarket
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis-node-7000:
+    image: redis:7.2
+    container_name: redis-node-7000
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7000" ]
+    ports:
+      - "7000:7000"
+      - "17000:17000"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.10
+
+  redis-node-7001:
+    image: redis:7.2
+    container_name: redis-node-7001
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7001" ]
+    ports:
+      - "7001:7001"
+      - "17001:17001"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.11
+
+  redis-node-7002:
+    image: redis:7.2
+    container_name: redis-node-7002
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7002" ]
+    ports:
+      - "7002:7002"
+      - "17002:17002"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.12
+
+  redis-node-7003:
+    image: redis:7.2
+    container_name: redis-node-7003
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7003" ]
+    ports:
+      - "7003:7003"
+      - "17003:17003"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.13
+
+  redis-node-7004:
+    image: redis:7.2
+    container_name: redis-node-7004
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7004" ]
+    ports:
+      - "7004:7004"
+      - "17004:17004"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.14
+
+  redis-node-7005:
+    image: redis:7.2
+    container_name: redis-node-7005
+    command: [ "redis-server", "--cluster-enabled", "yes", "--cluster-config-file", "nodes.conf", "--port", "7005" ]
+    ports:
+      - "7005:7005"
+      - "17005:17005"
+    networks:
+      redis-cluster:
+        ipv4_address: 172.20.0.15
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,DOCKER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,DOCKER://kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+volumes:
+  mysql-data:
+
+networks:
+  redis-cluster:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

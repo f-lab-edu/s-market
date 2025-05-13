@@ -19,4 +19,12 @@ public class StockController {
     ) {
         stockService.decreaseStockAndPublish(productId, quantity, orderId);
     }
+
+    @PatchMapping("/{productId}/increase")
+    public void increaseStock(
+            @PathVariable final Long productId,
+            @RequestParam final Long quantity
+    ) {
+        stockService.increaseStock(productId, quantity);
+    }
 }

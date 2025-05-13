@@ -1,6 +1,6 @@
 package com.sangyunpark.product.infrastructure.kafka;
 
-import com.sangyunpark.product.application.event.StockDeductedEvent;
+import com.sangyunpark.product.infrastructure.kafka.event.StockDeductedEvent;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
