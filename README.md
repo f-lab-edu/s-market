@@ -29,7 +29,7 @@ ERD 링크 : https://www.erdcloud.com/d/Wgx8k2m8XzcxEPoMx
 - 블랙리스트 처리
 - 인증 캐시 처리
 
-2. 상품(Product) 도메인
+3. 상품(Product) 도메인
 - 상품 생성
 - 상품 조회
 - 재고 증가 및 감소
