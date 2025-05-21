@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface StockJpaRepository extends JpaRepository<Stock, Long> {
@@ -16,4 +17,6 @@ public interface StockJpaRepository extends JpaRepository<Stock, Long> {
 
     @Query("SELECT s.quantity FROM Stock s WHERE s.productId = :productId")
     Optional<Long> findQuantityByProductId(Long productId);
+
+    List<Stock> findByProductIdIn(List<Long> productIds);
 }
