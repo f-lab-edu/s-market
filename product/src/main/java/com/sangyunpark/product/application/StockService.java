@@ -2,6 +2,7 @@ package com.sangyunpark.product.application;
 
 import com.sangyunpark.product.application.event.StockDeductedEvent;
 import com.sangyunpark.product.constant.ErrorCode;
+import com.sangyunpark.product.domain.entity.Stock;
 import com.sangyunpark.product.exception.BusinessException;
 import com.sangyunpark.product.infrastructure.kafka.StockEventProducer;
 import com.sangyunpark.product.infrastructure.redis.OrderDuplicationRepository;
@@ -12,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -44,5 +48,19 @@ public class StockService {
 
         final StockDeductedEvent event = new StockDeductedEvent(orderId, productId, quantity);
         stockEventProducer.sendStockDeductedEvent(event);
+    }
+
+    public Long getQuantityByProductId(final Long productId) {
+        return stockJpaRepository.findQuantityByProductId(productId).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    public Map<Long, Long> checkExistence(List<Long> productsId) {
+        final List<Stock> stocks = stockJpaRepository.findByProductIdIn(productsId);
+
+        return stocks.stream()
+                .collect(Collectors.toMap(
+                        Stock::getProductId,
+                        Stock::getProductId
+                ));
     }
 }
