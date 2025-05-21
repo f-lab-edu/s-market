@@ -15,6 +15,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -71,5 +73,10 @@ public class ProductController {
     @DeleteMapping("/{id}")
     public void delete(@PathVariable final Long id) {
         productService.deleteById(id);
+    }
+
+    @PostMapping("/exists")
+    Map<Long,Boolean> checkProductExists(@RequestBody List<Long> productsId) {
+        return productService.checkExistence(productsId);
     }
 }
