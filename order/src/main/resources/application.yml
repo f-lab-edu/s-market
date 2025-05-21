@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: order
+
+
+client:
+  product-service:
+    url: http://localhost:8080/api/v1/products
+  stock-service:
+    url: http://localhost:8080/api/v1/stocks
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      productService:
+        failureRateThreshold: 50
+        slidingWindowSize: 20
+        waitDurationInOpenState: 3s
+
+      stockService:
+        failureRateThreshold: 50
+        slidingWindowSize: 20
+        waitDurationInOpenState: 3s
+  retry:
+    instances:
+      productService:
+        max-attempts: 3
+        wait-duration: 500ms
+
+      stockService:
+        max-attempts: 3
+        wait-duration: 500ms
