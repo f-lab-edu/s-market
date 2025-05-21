@@ -20,7 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,5 +84,16 @@ public class ProductService {
     public void deleteById(final Long id) {
         final Product product = findProductById(id);
         productJpaRepository.delete(product);
+    }
+
+    public Map<Long, Boolean> checkExistence(List<Long> productsId) {
+        List<Long> existingIds = productJpaRepository.findExistingIds(productsId);
+        Set<Long> existingIdSet = new HashSet<>(existingIds);
+
+        return productsId.stream()
+                .collect(Collectors.toMap(
+                        id -> id,
+                        existingIdSet::contains
+                ));
     }
 }
