@@ -13,7 +13,7 @@ import org.springframework.kafka.listener.DefaultErrorHandler;
 
 @Slf4j
 @Configuration
-public class    KafkaConsumerConfig {
+public class KafkaConsumerConfig {
 
     private final String DLT = ".DLT";
     private final int MAX_RETRY_COUNT = 5;
